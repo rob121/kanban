@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gorilla/sessions"
 	"github.com/markbates/goth"
@@ -90,6 +91,10 @@ func GetUser(r *http.Request) (*models.User, bool) {
 }
 
 func SetUser(w http.ResponseWriter, r *http.Request, user *models.User) error {
+	now := time.Now()
+	_ = database.DB.Model(&models.User{}).Where("id = ?", user.ID).Update("last_login_at", now).Error
+	user.LastLoginAt = &now
+
 	sess, err := store.Get(r, sessionName)
 	if err != nil {
 		return err

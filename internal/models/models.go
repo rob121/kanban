@@ -18,6 +18,7 @@ type User struct {
 	IsAdmin      bool   `gorm:"default:false"`
 	Archived     bool   `gorm:"default:false;index"`
 	Theme        string `gorm:"size:8;not null;default:'light'"`
+	LastLoginAt  *time.Time
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }

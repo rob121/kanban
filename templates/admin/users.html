@@ -24,6 +24,7 @@
                         <th>Type</th>
                         <th>Admin</th>
                         <th>Status</th>
+                        <th>Last login</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -39,6 +40,7 @@
                         <td>{{if .IsAPIUser}}<span class="badge text-bg-info">API</span>{{else}}<span class="badge text-bg-light border">Web</span>{{end}}</td>
                         <td>{{if .IsAdmin}}<span class="badge text-bg-primary">Admin</span>{{else}}<span class="text-muted">—</span>{{end}}</td>
                         <td>{{if .Archived}}<span class="badge text-bg-secondary">Archived</span>{{else}}<span class="badge text-bg-success">Active</span>{{end}}</td>
+                        <td>{{if .LastLoginAt}}<time datetime="{{.LastLoginAt.Format "2006-01-02T15:04:05Z07:00"}}">{{.LastLoginAt.Format "Jan 2, 2006 3:04 PM"}}</time>{{else}}<span class="text-muted">Never</span>{{end}}</td>
                         <td class="text-end">
                             <a href="/admin/users/{{.ID}}" class="btn btn-sm btn-outline-primary">Edit</a>
                         </td>
@@ -46,7 +48,7 @@
                     {{end}}
                     {{else}}
                     <tr>
-                        <td colspan="9" class="text-center text-muted py-4">No users yet. <a href="/admin/users/new">Invite the first user</a>.</td>
+                        <td colspan="10" class="text-center text-muted py-4">No users yet. <a href="/admin/users/new">Invite the first user</a>.</td>
                     </tr>
                     {{end}}
                 </tbody>
