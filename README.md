@@ -103,10 +103,12 @@ Most screenshots below are in light mode. Use the sun/moon toggle in the navbar 
 
 - **Authentication** — Local username/password and optional Google OAuth; CSRF on all POST forms
 - **Access control** — Users see boards they own or are members of; admins see all boards
-- **Member permissions** — Per-user toggles for create, update, delete, move, and attach on cards
-- **Boards & columns** — Multiple boards; customizable columns and board color
-- **Cards** — Title, description, tags, priority, due date, assignee, creator, and comments
+- **Member permissions** — Per-user toggles for create, update, delete, move, attach, and **tags** on cards
+- **Boards & columns** — Multiple boards; customizable columns and board color; owners can archive boards
+- **Cards** — Title, description, tags, priority, due date, assignee, owner, comments, and email notifications for subscribers
 - **Attachments** — Drag-and-drop files on cards; stored privately and served only to authorized users
+- **Admin** — User invite (web or API-only), archive/delete users, board hard-delete for archived boards
+- **REST API** — Versioned JSON API at `/api/v1` with bearer-token auth and Swagger docs
 - **Light/dark theme** — Navbar toggle; preference saved to your user profile (also cached in the browser for fast loads)
 - **Branding** — Configurable app name, header mark, and brand color
 
@@ -138,10 +140,57 @@ SQLite uses [glebarez/sqlite](https://github.com/glebarez/sqlite) (`modernc.org/
 
 **Attachments** are stored outside the web root (default `data/attachments/`). Override with `attachments_dir` in config.
 
+**Mail** (optional) — Configure `mail` in `config.json` for invite emails and card notifications. Set `mail.test_to` to redirect all outbound mail to one address during development; leave it empty in production so mail goes to real recipients.
+
+## REST API (v1)
+
+Interactive docs: [http://localhost:8080/api/v1/docs/](http://localhost:8080/api/v1/docs/) (OpenAPI spec at `/api/v1/openapi.yaml`).
+
+### API users
+
+Admins create **API users** under **Users → Create user → API user**. The bearer token is shown once on the confirmation page (regenerate from the user edit screen if needed). API users cannot sign in to the web UI.
+
+Add an API user as a **board member** with the same permission toggles as web users (create, update, move, tags, etc.).
+
+### Authentication
+
+```http
+Authorization: Bearer kbn_…
+```
+
+### Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/v1/me` | Current API user |
+| `GET` | `/api/v1/boards` | List accessible boards |
+| `GET` | `/api/v1/boards/{id}` | Board with columns, cards, and tags |
+| `GET` | `/api/v1/boards/{id}/categories` | List columns |
+| `GET` | `/api/v1/boards/{id}/cards` | List cards (`?archived=false\|true\|all`) |
+| `GET` | `/api/v1/cards/{id}` | Card detail |
+| `POST` | `/api/v1/cards` | Create card |
+| `PATCH` | `/api/v1/cards/{id}` | Update card |
+| `POST` | `/api/v1/cards/{id}/move` | Move/reorder card |
+| `POST` | `/api/v1/cards/{id}/archive` | Archive card |
+| `POST` | `/api/v1/cards/{id}/comments` | Add comment |
+
+## Releases
+
+GitHub Actions workflows in `.github/workflows/`:
+
+- **CI** — Tests and build on push/PR; can be run manually from the Actions tab.
+- **Release** — Build cross-platform binaries (`CGO_ENABLED=0`) and publish a GitHub release. Run manually from **Actions → Release → Run workflow**, or push a `v*` tag.
+
+## Production install
+
+See `install/kanban.service` for a systemd unit example. Config is typically `/etc/kanban/config.json` with data in `/var/lib/kanban`.
+
 ## Authentication notes
 
 - **Google OAuth** — Only signs in users who already have an account; it does not auto-create users.
 - **Bootstrap admin** — `./kanban bootstrap-admin` creates the first local admin.
+- **Web users** — Admins can invite local users (optional invite email when SMTP is configured) or link Google sign-in by email.
+- **API users** — Bearer-token only; created in the admin UI.
 
 ## Stack
 
