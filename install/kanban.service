@@ -1,0 +1,38 @@
+[Unit]
+Description=Kanban Board
+Documentation=https://github.com/rob121/kanban
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kanban
+Group=kanban
+
+# Install the release binary to match this path (or adjust ExecStart).
+ExecStart=/usr/local/bin/kanban
+
+# Relative database.dsn and attachments_dir paths resolve here.
+WorkingDirectory=/var/lib/kanban
+
+# Config is loaded from /etc/kanban/config.json (see README).
+# Example:
+#   sudo mkdir -p /etc/kanban /var/lib/kanban
+#   sudo cp config.example.json /etc/kanban/config.json
+#   sudo chown -R kanban:kanban /var/lib/kanban
+#   sudo chmod 600 /etc/kanban/config.json
+
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+# Hardening (optional; relax if your environment requires broader access)
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/kanban
+ReadOnlyPaths=/etc/kanban
+
+[Install]
+WantedBy=multi-user.target

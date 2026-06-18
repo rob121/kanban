@@ -1,0 +1,38 @@
+{{define "content"}}
+<div class="container py-4">
+    <div class="mb-4">
+        <h1 class="h3 fw-semibold mb-1">My Boards</h1>
+        <p class="text-muted mb-0">Create and manage your kanban workspaces</p>
+    </div>
+
+    <div class="row g-3">
+        {{range .Data.Boards}}
+        <div class="col-sm-6 col-lg-4">
+            <div class="card board-card h-100 shadow-sm border-0 overflow-hidden position-relative">
+                <div class="board-card-header px-3 py-2" style="{{boardHeaderStyle .Color}}">
+                    <h2 class="h6 mb-0 fw-semibold">{{.Name}}</h2>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    {{if .Description}}
+                    <p class="card-text text-muted small flex-grow-1 mb-0">{{.Description}}</p>
+                    {{else}}
+                    <p class="card-text text-muted small flex-grow-1 mb-0">No description</p>
+                    {{end}}
+                    <div class="text-muted small mt-2">Updated {{.UpdatedAt.Format "Jan 2, 2006"}}</div>
+                </div>
+                <a href="/boards/{{.ID}}" class="stretched-link" aria-label="Open {{.Name}}"></a>
+            </div>
+        </div>
+        {{end}}
+        <div class="col-sm-6 col-lg-4">
+            <a href="/boards/new" class="card board-card board-card-new h-100 shadow-sm text-decoration-none" aria-label="Create a new board">
+                <div class="board-card-new-body">
+                    <span class="board-card-new-icon" aria-hidden="true">+</span>
+                    <h2 class="h6 mb-1 fw-semibold">Create a new Board</h2>
+                    <p class="text-muted small mb-0">Start a fresh kanban workspace</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{{end}}

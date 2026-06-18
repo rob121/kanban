@@ -1,0 +1,19 @@
+{{define "tag-pills"}}
+<fieldset class="mb-0">
+    <legend class="form-label fs-6 mb-2">{{if .Legend}}{{.Legend}}{{else}}Tags{{end}}</legend>
+    {{if .Tags}}
+    <div class="d-flex flex-wrap gap-2 board-tag-picker">
+        {{range .Tags}}
+        <label class="btn btn-sm rounded-pill tag-pill-btn tag-pill-outline-{{.Color}}">
+            <input type="checkbox" class="tag-pill-check visually-hidden" name="tag_ids" value="{{.ID}}" autocomplete="off"{{if index $.Selected (printf "%d" .ID)}} checked{{end}}>
+            <span class="tag-pill-text">{{.Name}}</span>
+            <span class="tag-pill-mark tag-pill-mark-add" aria-hidden="true">+</span>
+            <span class="tag-pill-mark tag-pill-mark-check" aria-hidden="true">✓</span>
+        </label>
+        {{end}}
+    </div>
+    {{else}}
+    <p class="text-muted small mb-0">No tags on this board.{{if .BoardID}} <a href="/boards/{{.BoardID}}/tags">Manage tags</a>{{end}}</p>
+    {{end}}
+</fieldset>
+{{end}}

@@ -1,0 +1,4 @@
+kanban.db
+config.json
+*.db-journal
+data/attachments/

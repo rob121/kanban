@@ -1,0 +1,24 @@
+{{define "member-permissions"}}
+<div class="member-perm-grid">
+    <label class="member-perm">
+        <input type="checkbox" class="member-perm-input" name="can_create" id="{{.Prefix}}-create"{{if .CanCreate}} checked{{end}}>
+        <span class="member-perm-box">Create</span>
+    </label>
+    <label class="member-perm">
+        <input type="checkbox" class="member-perm-input" name="can_update" id="{{.Prefix}}-update"{{if .CanUpdate}} checked{{end}}>
+        <span class="member-perm-box">Update</span>
+    </label>
+    <label class="member-perm">
+        <input type="checkbox" class="member-perm-input" name="can_delete" id="{{.Prefix}}-delete"{{if .CanDelete}} checked{{end}}>
+        <span class="member-perm-box">Delete</span>
+    </label>
+    <label class="member-perm">
+        <input type="checkbox" class="member-perm-input" name="can_move" id="{{.Prefix}}-move"{{if .CanMove}} checked{{end}}>
+        <span class="member-perm-box">Move</span>
+    </label>
+    <label class="member-perm">
+        <input type="checkbox" class="member-perm-input" name="can_attach" id="{{.Prefix}}-attach"{{if .CanAttach}} checked{{end}}>
+        <span class="member-perm-box">Attach</span>
+    </label>
+</div>
+{{end}}

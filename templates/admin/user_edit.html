@@ -1,0 +1,78 @@
+{{define "content"}}
+<div class="container py-4" style="max-width: 640px;">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/admin/users">Users</a></li>
+            <li class="breadcrumb-item active">{{.Data.EditUser.Name}}</li>
+        </ol>
+    </nav>
+
+    <h1 class="h3 fw-semibold mb-4">Edit user</h1>
+
+    {{if .Error}}
+    <div class="alert alert-danger">{{.Error}}</div>
+    {{end}}
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4 d-flex align-items-center gap-3">
+            {{template "user-avatar" (dict "User" .Data.EditUser "Size" "lg")}}
+            <div>
+                <div class="fw-semibold">{{.Data.EditUser.Name}}</div>
+                <div class="text-muted small">{{.Data.EditUser.Email}}</div>
+                {{if eq .Data.EditUser.Provider "google"}}
+                <div class="text-muted small mt-1">Profile photo from Google account (updated on sign-in)</div>
+                {{else if .Data.EditUser.AvatarURL}}
+                <div class="text-muted small mt-1">Custom profile photo</div>
+                {{else}}
+                <div class="text-muted small mt-1">No profile photo — initials are shown instead</div>
+                {{end}}
+            </div>
+        </div>
+    </div>
+
+    <form method="post" action="/admin/users/{{.Data.EditUser.ID}}" class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            {{template "csrf" .}}
+            <div class="mb-3">
+                <label for="name" class="form-label">Display name</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{.Data.EditUser.Name}}" required>
+            </div>
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" name="username" value="{{.Data.EditUser.UsernameString}}" autocomplete="off">
+                <div class="form-text">Leave blank for OAuth-only accounts.</div>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{.Data.EditUser.Email}}" required>
+            </div>
+            {{if ne .Data.EditUser.Provider "google"}}
+            <div class="mb-3">
+                <label for="avatar_url" class="form-label">Profile photo URL</label>
+                <input type="url" class="form-control" id="avatar_url" name="avatar_url" value="{{.Data.EditUser.AvatarURL}}" placeholder="https://example.com/photo.jpg" autocomplete="off">
+                <div class="form-text">Optional image URL. Leave blank to show initials.</div>
+            </div>
+            {{end}}
+            <div class="mb-3">
+                <label for="password" class="form-label">New password</label>
+                <input type="password" class="form-control" id="password" name="password" autocomplete="new-password">
+                <div class="form-text">Leave blank to keep the current password.</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Sign-in method</label>
+                <div class="form-control-plaintext">
+                    <span class="badge text-bg-light border text-capitalize">{{if .Data.EditUser.Provider}}{{.Data.EditUser.Provider}}{{else}}local{{end}}</span>
+                </div>
+            </div>
+            <div class="mb-4 form-check">
+                <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin" {{if .Data.EditUser.IsAdmin}}checked{{end}}>
+                <label class="form-check-label" for="is_admin">Administrator</label>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Save changes</button>
+                <a href="/admin/users" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </div>
+    </form>
+</div>
+{{end}}

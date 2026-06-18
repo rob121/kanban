@@ -1,0 +1,83 @@
+{{define "content"}}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/boards">Boards</a></li>
+            <li class="breadcrumb-item"><a href="/boards/{{.Data.Board.ID}}">{{.Data.Board.Name}}</a></li>
+            <li class="breadcrumb-item active">Tags</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-semibold mb-1">Board tags</h1>
+            <p class="text-muted mb-0">Tags available when adding or editing cards on <strong>{{.Data.Board.Name}}</strong>.</p>
+        </div>
+        <a href="/boards/{{.Data.Board.ID}}" class="btn btn-outline-secondary btn-sm">Back to board</a>
+    </div>
+
+    {{if .Error}}
+    <div class="alert alert-warning" role="alert">{{.Error}}</div>
+    {{end}}
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-transparent">
+                    <h2 class="h6 fw-semibold mb-0">Add tag</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="/boards/{{.Data.Board.ID}}/tags">
+                        {{template "csrf" .}}
+                        <div class="mb-3">
+                            <label for="tag-name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="tag-name" name="name" required placeholder="e.g. Design">
+                        </div>
+                        <div class="mb-3">
+                            <label for="tag-color" class="form-label">Color</label>
+                            <select class="form-select" id="tag-color" name="color">
+                                <option value="primary">Blue</option>
+                                <option value="danger">Red</option>
+                                <option value="warning">Yellow</option>
+                                <option value="info">Cyan</option>
+                                <option value="success">Green</option>
+                                <option value="secondary">Gray</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add tag</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-transparent">
+                    <h2 class="h6 fw-semibold mb-0">Current tags</h2>
+                </div>
+                <div class="list-group list-group-flush">
+                    {{range .Data.Tags}}
+                    <div class="list-group-item d-flex align-items-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="badge rounded-pill tag-pill-badge {{tagColor .Color}}">{{.Name}}</span>
+                            {{if gt .ActiveCards 0}}
+                            <span class="text-muted small">On {{.ActiveCards}} active {{if eq .ActiveCards 1}}card{{else}}cards{{end}}</span>
+                            {{end}}
+                        </div>
+                        {{if gt .ActiveCards 0}}
+                        <button type="button" class="btn btn-sm btn-outline-danger" disabled title="Archive cards using this tag or remove it from them first">Remove</button>
+                        {{else}}
+                        <form method="post" action="/boards/{{$.Data.Board.ID}}/tags/{{.ID}}/delete" class="m-0" onsubmit="return confirm('Remove this tag from the board? It will be removed from any archived cards using it.');">
+                            {{template "csrf" $}}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                        </form>
+                        {{end}}
+                    </div>
+                    {{else}}
+                    <div class="list-group-item text-muted">No tags yet.</div>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

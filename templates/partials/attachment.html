@@ -1,0 +1,14 @@
+{{define "attachment"}}
+<li class="attachment-item" id="attachment-{{.Attachment.ID}}">
+    <a href="/attachments/{{.Attachment.ID}}" class="attachment-item-link" download>
+        <span class="attachment-item-icon" aria-hidden="true">📎</span>
+        <span class="attachment-item-body">
+            <span class="attachment-item-name">{{.Attachment.Filename}}</span>
+            <span class="attachment-item-meta">{{formatBytes .Attachment.Size}} · {{.Attachment.User.Name}} · {{.Attachment.CreatedAt.Format "Jan 2"}}</span>
+        </span>
+    </a>
+    {{if canRemoveAttachment .Access .Attachment.UserID .User.ID}}
+    <button type="button" class="btn btn-sm btn-link attachment-delete-btn" data-attachment-id="{{.Attachment.ID}}" title="Remove attachment" aria-label="Remove {{.Attachment.Filename}}">×</button>
+    {{end}}
+</li>
+{{end}}

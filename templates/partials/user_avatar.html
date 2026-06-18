@@ -1,0 +1,9 @@
+{{define "user-avatar"}}
+{{$size := .Size}}
+{{if not $size}}{{$size = ""}}{{end}}
+{{if .User.AvatarURL}}
+<img src="{{.User.AvatarURL}}" alt="" class="avatar{{if $size}} avatar-{{$size}}{{end}} avatar-img" loading="lazy" referrerpolicy="no-referrer"{{if .Title}} title="{{.Title}}"{{else if .User.Name}} title="{{.User.Name}}"{{end}}>
+{{else}}
+<span class="avatar{{if $size}} avatar-{{$size}}{{end}}"{{if .Title}} title="{{.Title}}"{{else if .User.Name}} title="{{.User.Name}}"{{end}}>{{initials .User.Name}}</span>
+{{end}}
+{{end}}

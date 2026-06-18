@@ -1,0 +1,77 @@
+{{define "content"}}
+<div class="container py-4" style="max-width: 640px;">
+    <h1 class="h3 fw-semibold mb-4">Account settings</h1>
+
+    {{if .Data.Saved}}
+    <div class="alert alert-success">Your account has been updated.</div>
+    {{end}}
+
+    {{if .Error}}
+    <div class="alert alert-danger">{{.Error}}</div>
+    {{end}}
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4 d-flex align-items-center gap-3">
+            {{template "user-avatar" (dict "User" .User "Size" "lg")}}
+            <div>
+                <div class="fw-semibold">{{.User.Name}}</div>
+                <div class="text-muted small">{{.User.Email}}</div>
+                {{if eq .User.Provider "google"}}
+                <div class="text-muted small mt-1">Profile photo and name sync from Google when you sign in.</div>
+                {{else if .User.AvatarURL}}
+                <div class="text-muted small mt-1">Custom profile photo</div>
+                {{else}}
+                <div class="text-muted small mt-1">No profile photo — initials are shown instead</div>
+                {{end}}
+            </div>
+        </div>
+    </div>
+
+    <form method="post" action="/account/settings" class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            {{template "csrf" .}}
+            <div class="mb-3">
+                <label for="name" class="form-label">Display name</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{.User.Name}}" required>
+            </div>
+            {{if ne .User.Provider "google"}}
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" name="username" value="{{.User.UsernameString}}" autocomplete="username">
+                <div class="form-text">Used to sign in with a password.</div>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{.User.Email}}" required autocomplete="email">
+            </div>
+            <div class="mb-3">
+                <label for="avatar_url" class="form-label">Profile photo URL</label>
+                <input type="url" class="form-control" id="avatar_url" name="avatar_url" value="{{.User.AvatarURL}}" placeholder="https://example.com/photo.jpg" autocomplete="off">
+                <div class="form-text">Optional image URL. Leave blank to show initials.</div>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">New password</label>
+                <input type="password" class="form-control" id="password" name="password" autocomplete="new-password">
+                <div class="form-text">Leave blank to keep your current password.</div>
+            </div>
+            {{else}}
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <div class="form-control-plaintext">{{.User.Email}}</div>
+                <div class="form-text">Managed by your Google account. Contact an administrator to change it.</div>
+            </div>
+            {{end}}
+            <div class="mb-4">
+                <label class="form-label">Sign-in method</label>
+                <div class="form-control-plaintext">
+                    <span class="badge text-bg-light border text-capitalize">{{if .User.Provider}}{{.User.Provider}}{{else}}local{{end}}</span>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Save changes</button>
+                <a href="/boards" class="btn btn-outline-secondary">Back to boards</a>
+            </div>
+        </div>
+    </form>
+</div>
+{{end}}

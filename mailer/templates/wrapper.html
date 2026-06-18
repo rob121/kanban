@@ -1,0 +1,117 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="x-apple-disable-message-reformatting">
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+    <title>{{.SiteName}}</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style type="text/css">
+        body, table, td, p, a, li { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse; }
+        img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; display: block; }
+        body { margin: 0 !important; padding: 0 !important; width: 100% !important; height: 100% !important; }
+        a { color: {{.BrandColor}}; text-decoration: underline; }
+        .email-preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; max-height: 0; max-width: 0; overflow: hidden; mso-hide: all; font-size: 1px; line-height: 1px; }
+        @media only screen and (max-width: 620px) {
+            .email-shell { width: 100% !important; }
+            .email-pad { padding-left: 16px !important; padding-right: 16px !important; }
+            .email-header-pad { padding: 16px !important; }
+            .email-body-pad { padding: 20px 16px !important; }
+            .email-brand-text { font-size: 16px !important; }
+        }
+    </style>
+</head>
+<body style="margin:0;padding:0;background-color:#f8f9fa;width:100%;">
+    {{if .Preheader}}
+    <div class="email-preheader">{{.Preheader}}</div>
+    {{end}}
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8f9fa;">
+        <tr>
+            <td align="center" style="padding:24px 12px;">
+                <table role="presentation" class="email-shell" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;">
+
+                    <!-- Header (navbar-style) -->
+                    <tr>
+                        <td class="email-header-pad" style="padding:16px 20px;background-color:#f1f3f5;border:1px solid #dee2e6;border-bottom:none;border-radius:12px 12px 0 0;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="left" valign="middle">
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                {{if .Logo}}
+                                                <td valign="middle" style="padding-right:10px;">
+                                                    <img src="{{.Logo}}" width="36" height="36" alt="{{.SiteName}}" style="width:36px;height:36px;border-radius:8px;">
+                                                </td>
+                                                {{else}}
+                                                <td valign="middle" style="padding-right:10px;">
+                                                    <!--[if mso]>
+                                                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{.BaseURL}}" style="height:36px;v-text-anchor:middle;width:36px;" arcsize="12%" strokecolor="{{.BrandColor}}" fillcolor="{{.BrandColor}}">
+                                                    <w:anchorlock/>
+                                                    <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;">{{.BrandMark}}</center>
+                                                    </v:roundrect>
+                                                    <![endif]-->
+                                                    <!--[if !mso]><!-->
+                                                    <div style="display:inline-block;width:36px;height:36px;line-height:36px;background-color:{{.BrandColor}};border-radius:8px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;font-weight:700;color:#ffffff;">{{.BrandMark}}</div>
+                                                    <!--<![endif]-->
+                                                </td>
+                                                {{end}}
+                                                <td valign="middle" class="email-brand-text" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:18px;font-weight:600;color:#212529;line-height:1.2;">
+                                                    {{if .BaseURL}}
+                                                    <a href="{{.BaseURL}}" style="color:#212529;text-decoration:none;font-weight:600;">{{.SiteName}}</a>
+                                                    {{else}}
+                                                    {{.SiteName}}
+                                                    {{end}}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Body card -->
+                    <tr>
+                        <td class="email-body-pad email-pad" style="padding:28px 24px;background-color:#ffffff;border-left:1px solid #dee2e6;border-right:1px solid #dee2e6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#495057;">
+                            {{.Body}}
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td class="email-pad" align="center" style="padding:16px 24px 20px;background-color:#ffffff;border:1px solid #dee2e6;border-top:1px solid #e9ecef;border-radius:0 0 12px 12px;">
+                            <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6c757d;">
+                                {{if .BaseURL}}
+                                <a href="{{.BaseURL}}" style="color:#6c757d;text-decoration:none;font-weight:600;">{{.SiteName}}</a>
+                                {{else}}
+                                <span style="font-weight:600;">{{.SiteName}}</span>
+                                {{end}}
+                            </p>
+                            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;line-height:1.5;color:#adb5bd;">
+                                &copy; {{year}} {{.SiteName}}
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Outer spacer -->
+                    <tr>
+                        <td height="24" style="font-size:1px;line-height:1px;">&nbsp;</td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -1,0 +1,106 @@
+{{define "content"}}
+<div class="container py-4 members-page">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/boards">Boards</a></li>
+            <li class="breadcrumb-item"><a href="/boards/{{.Data.Board.ID}}">{{.Data.Board.Name}}</a></li>
+            <li class="breadcrumb-item active">Members</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-semibold mb-1">Board members</h1>
+            <p class="text-muted mb-0">Manage who can access <strong>{{.Data.Board.Name}}</strong> and what they can do on cards.</p>
+        </div>
+        <a href="/boards/{{.Data.Board.ID}}" class="btn btn-outline-secondary btn-sm">Back to board</a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 members-add-card h-100">
+                <div class="card-header members-card-header">
+                    <h2 class="h6 fw-semibold mb-0">Invite member</h2>
+                    <p class="text-muted small mb-0 mt-1">Add an existing user and set their card permissions.</p>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="/boards/{{.Data.Board.ID}}/members">
+                        {{template "csrf" .}}
+                        <div class="mb-3">
+                            <label for="user_id" class="form-label">User</label>
+                            <select class="form-select" id="user_id" name="user_id" required>
+                                <option value="">Select a user…</option>
+                                {{range .Data.AvailableUsers}}
+                                <option value="{{.ID}}">{{.Name}} ({{if .Username}}{{.UsernameString}}{{else}}{{.Email}}{{end}})</option>
+                                {{else}}
+                                <option value="" disabled>All users already have access</option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <fieldset class="mb-4">
+                            <legend class="form-label fs-6 mb-2">Permissions</legend>
+                            {{template "member-permissions" (dict "Prefix" "add" "CanCreate" true "CanUpdate" true "CanDelete" false "CanMove" true "CanAttach" true)}}
+                        </fieldset>
+                        <button type="submit" class="btn btn-primary w-100" {{if not .Data.AvailableUsers}}disabled{{end}}>Add member</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 members-list-card">
+                <div class="card-header members-card-header d-flex align-items-center justify-content-between gap-2">
+                    <div>
+                        <h2 class="h6 fw-semibold mb-0">People with access</h2>
+                        <p class="text-muted small mb-0 mt-1">{{add (len .Data.Members) 1}} on this board</p>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="members-list">
+                        <article class="member-card member-card-owner">
+                            <div class="member-card-profile">
+                                {{template "user-avatar" (dict "User" .Data.Owner "Size" "sm")}}
+                                <div class="member-card-identity">
+                                    <div class="member-card-name">{{.Data.Owner.Name}}</div>
+                                    <div class="member-card-handle">{{if .Data.Owner.Username}}{{.Data.Owner.UsernameString}}{{else}}{{.Data.Owner.Email}}{{end}}</div>
+                                </div>
+                                <span class="badge rounded-pill text-bg-primary member-role-badge">Owner</span>
+                            </div>
+                            <p class="member-card-note mb-0">Full access — can manage board settings, columns, tags, and members.</p>
+                        </article>
+
+                        {{range .Data.Members}}
+                        <article class="member-card">
+                            <div class="member-card-profile">
+                                {{template "user-avatar" (dict "User" .User "Size" "sm")}}
+                                <div class="member-card-identity">
+                                    <div class="member-card-name">{{.User.Name}}</div>
+                                    <div class="member-card-handle">{{if .User.Username}}{{.User.UsernameString}}{{else}}{{.User.Email}}{{end}}</div>
+                                </div>
+                                <span class="badge rounded-pill text-bg-light border member-role-badge">Member</span>
+                            </div>
+
+                            <form method="post" action="/boards/{{$.Data.Board.ID}}/members/{{.UserID}}" class="member-card-form">
+                                {{template "csrf" $}}
+                                <div class="member-card-perms">
+                                    <span class="member-card-perms-label">Permissions</span>
+                                    {{template "member-permissions" (dict "Prefix" (printf "m-%d" .ID) "CanCreate" .CanCreate "CanUpdate" .CanUpdate "CanDelete" .CanDelete "CanMove" .CanMove "CanAttach" .CanAttach)}}
+                                </div>
+                                <div class="member-card-actions">
+                                    <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" formaction="/boards/{{$.Data.Board.ID}}/members/{{.UserID}}/remove" formmethod="post" onclick="return confirm('Remove this member from the board?');">Remove</button>
+                                </div>
+                            </form>
+                        </article>
+                        {{else}}
+                        <div class="member-card member-card-empty">
+                            <p class="text-muted mb-0">No additional members yet. Invite someone using the form on the left.</p>
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

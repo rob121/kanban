@@ -1,0 +1,155 @@
+{{define "content"}}
+<div class="board-header px-3 px-lg-4 py-3 border-bottom bg-body-tertiary">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <nav aria-label="breadcrumb" class="mb-1">
+                <ol class="breadcrumb mb-0 small">
+                    <li class="breadcrumb-item"><a href="/boards">Boards</a></li>
+                    <li class="breadcrumb-item active">{{.Data.Board.Name}}</li>
+                </ol>
+            </nav>
+            <h1 class="h4 fw-semibold mb-0">{{.Data.Board.Name}}</h1>
+            {{if .Data.Board.Description}}<p class="text-muted small mb-0 mt-1">{{.Data.Board.Description}}</p>{{end}}
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            {{if .Data.Access.CanManageMembers}}
+            <a href="/boards/{{.Data.Board.ID}}/members" class="btn btn-sm btn-secondary d-inline-flex align-items-center gap-1">
+                <span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                Members
+            </a>
+            {{end}}
+            {{if .Data.Access.CanManageBoard}}
+            <a href="/boards/{{.Data.Board.ID}}/settings" class="btn btn-sm btn-secondary d-inline-flex align-items-center gap-1">
+                <span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+                Settings
+            </a>
+            <a href="/boards/{{.Data.Board.ID}}/tags" class="btn btn-sm btn-secondary d-inline-flex align-items-center gap-1">
+                <span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41 0l6.59-6.59a1 1 0 0 0 0-1.41L12 2Z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg></span>
+                Tags
+            </a>
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">+ Column</button>
+            <form action="/boards/{{.Data.Board.ID}}/delete" method="post" class="m-0" onsubmit="return confirm('Delete this board and all its cards?');">
+                {{template "csrf" .}}
+                <button type="submit" class="btn btn-sm btn-outline-danger">Delete board</button>
+            </form>
+            {{end}}
+        </div>
+    </div>
+</div>
+
+<div class="kanban-board px-3 px-lg-4 py-3" data-board-id="{{.Data.Board.ID}}" data-can-move="{{.Data.Access.CanMove}}" data-can-manage-board="{{.Data.Access.CanManageBoard}}" data-can-delete-columns="{{.Data.Access.IsAdmin}}">
+    <div class="kanban-columns d-flex gap-3 overflow-auto pb-2" id="kanban-columns">
+        {{range .Data.Categories}}
+        <div class="kanban-column flex-shrink-0" data-category-id="{{.ID}}">
+            <div class="kanban-column-header d-flex align-items-center gap-1 mb-2 px-1">
+                {{if $.Data.Access.CanManageBoard}}
+                <button type="button" class="btn btn-sm btn-link text-muted p-0 column-drag-handle" title="Drag to reorder column" aria-label="Drag to reorder column">⠿</button>
+                {{end}}
+                <h2 class="h6 fw-semibold mb-0 text-truncate flex-grow-1">{{.Name}}</h2>
+                <span class="badge text-bg-secondary rounded-pill column-count">{{len (index $.Data.Cards .ID)}}</span>
+                {{if $.Data.Access.IsAdmin}}
+                {{$colCards := len (index $.Data.Cards .ID)}}
+                {{if eq $colCards 0}}
+                <button type="button" class="btn btn-sm btn-link text-danger p-0 delete-column-btn" data-category-id="{{.ID}}" title="Delete column" aria-label="Delete column">&times;</button>
+                {{end}}
+                {{end}}
+            </div>
+            <div class="kanban-cards list-group gap-2 min-h-column" data-category-id="{{.ID}}">
+                {{range index $.Data.Cards .ID}}
+                {{template "card" .}}
+                {{end}}
+            </div>
+            {{if $.Data.Access.CanCreate}}
+            <button type="button" class="btn btn-sm btn-light w-100 mt-2 add-card-btn" data-bs-toggle="modal" data-bs-target="#addCardModal" data-category-id="{{.ID}}">
+                + Add card
+            </button>
+            {{end}}
+        </div>
+        {{end}}
+    </div>
+</div>
+
+<div class="offcanvas offcanvas-end card-detail-offcanvas" tabindex="-1" id="cardDetail" aria-labelledby="cardDetailLabel">
+    <div class="offcanvas-header card-detail-header">
+        <div class="min-w-0 flex-grow-1 pe-2">
+            <p class="card-detail-header-eyebrow mb-1">Card</p>
+            <h2 class="offcanvas-title h5 mb-0 text-truncate" id="cardDetailLabel">Select a card</h2>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body card-detail-body p-0" id="card-detail-body">
+        <div class="card-detail-placeholder p-4 text-muted">Select a card to view details.</div>
+    </div>
+</div>
+
+{{if .Data.Access.CanCreate}}
+<div class="modal fade" id="addCardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form class="modal-content" method="post" action="/cards" id="add-card-form" data-turbo="false" novalidate data-board-id="{{.Data.Board.ID}}">
+            <div class="modal-header">
+                <h5 class="modal-title">Add card</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="add-card-error" class="alert alert-danger d-none" role="alert"></div>
+                {{template "csrf" .}}
+                <input type="hidden" name="board_id" value="{{.Data.Board.ID}}">
+                <input type="hidden" name="category_id" id="add-card-category-id" value="">
+                <div class="mb-3">
+                    <label class="form-label" for="card-title">Title</label>
+                    <input type="text" class="form-control" id="card-title" name="title" required>
+                    <div class="invalid-feedback">Title is required.</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="card-description">Description</label>
+                    <textarea class="form-control" id="card-description" name="description" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    {{template "tag-pills" (dict "Prefix" "card" "Tags" .Data.BoardTags "Selected" (dict) "BoardID" .Data.Board.ID)}}
+                </div>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label class="form-label" for="card-priority">Priority</label>
+                        <select class="form-select" id="card-priority" name="priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label" for="card-due">Due date</label>
+                        <input type="date" class="form-control" id="card-due" name="due_date">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add card</button>
+            </div>
+        </form>
+    </div>
+</div>
+{{end}}
+
+{{if .Data.Access.CanManageBoard}}
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <form class="modal-content" method="post" action="/categories">
+            <div class="modal-header">
+                <h5 class="modal-title">Add column</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {{template "csrf" .}}
+                <input type="hidden" name="board_id" value="{{.Data.Board.ID}}">
+                <label class="form-label" for="category-name">Column name</label>
+                <input type="text" class="form-control" id="category-name" name="name" required>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Add</button>
+            </div>
+        </form>
+    </div>
+</div>
+{{end}}
+{{end}}

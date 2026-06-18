@@ -1,0 +1,48 @@
+{{define "content"}}
+<div class="container py-4" style="max-width: 640px;">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/admin/users">Users</a></li>
+            <li class="breadcrumb-item active">Invite</li>
+        </ol>
+    </nav>
+
+    <h1 class="h3 fw-semibold mb-1">Invite user</h1>
+    <p class="text-muted mb-4">Create a local account. Share the username and password with the user so they can sign in.</p>
+
+    {{if .Error}}
+    <div class="alert alert-danger">{{.Error}}</div>
+    {{end}}
+
+    <form method="post" action="/admin/users" class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            {{template "csrf" .}}
+            <div class="mb-3">
+                <label for="name" class="form-label">Display name</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{with .Data}}{{.Name}}{{end}}" required autofocus>
+            </div>
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" name="username" value="{{with .Data}}{{.Username}}{{end}}" required autocomplete="off">
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{with .Data}}{{.Email}}{{end}}" required>
+                <div class="form-text">If they later sign in with Google using this email, the account will be linked.</div>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Temporary password</label>
+                <input type="password" class="form-control" id="password" name="password" required autocomplete="new-password">
+            </div>
+            <div class="mb-4 form-check">
+                <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin" {{with .Data}}{{if .IsAdmin}}checked{{end}}{{end}}>
+                <label class="form-check-label" for="is_admin">Administrator</label>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Create user</button>
+                <a href="/admin/users" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </div>
+    </form>
+</div>
+{{end}}

@@ -1,0 +1,33 @@
+{
+  "port": 8080,
+  "base_url": "http://localhost:8080",
+  "session_secret": "change-me-to-a-long-random-string",
+  "attachments_dir": "data/attachments",
+  "database": {
+    "driver": "sqlite",
+    "dsn": "kanban.db"
+  },
+  "auth": {
+    "google": {
+      "client_id": "",
+      "client_secret": ""
+    }
+  },
+  "branding": {
+    "app_name": "Kanban",
+    "brand_mark": "K",
+    "brand_color": "#4f46e5"
+  },
+  "mail": {
+    "host": "",
+    "port": 587,
+    "user": "",
+    "password": "",
+    "from": "",
+    "from_name": "",
+    "reply_to": "",
+    "test_to": "",
+    "template_path": "",
+    "logo": ""
+  }
+}

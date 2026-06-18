@@ -1,0 +1,114 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag (e.g. v1.0.0)
+        required: true
+        type: string
+      draft:
+        description: Create as draft release
+        required: false
+        type: boolean
+        default: false
+      prerelease:
+        description: Mark as pre-release
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build (${{ matrix.suffix }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            suffix: linux-amd64
+          - runner: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            suffix: linux-arm64
+            cross: true
+          - runner: macos-latest
+            goos: darwin
+            goarch: arm64
+            suffix: darwin-arm64
+          - runner: windows-latest
+            goos: windows
+            goarch: amd64
+            suffix: windows-amd64.exe
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install Linux ARM64 cross-compiler
+        if: matrix.cross == true
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 1
+        shell: bash
+        run: |
+          if [ "${{ matrix.cross }}" = "true" ]; then
+            export CC=aarch64-linux-gnu-gcc
+          fi
+          go build -trimpath -ldflags="-s -w" -o "kanban-${{ matrix.suffix }}" .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kanban-${{ matrix.suffix }}
+          path: kanban-${{ matrix.suffix }}
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Add config example
+        run: cp config.example.json dist/
+
+      - name: Write checksums
+        working-directory: dist
+        run: |
+          sha256sum kanban-* config.example.json > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          name: ${{ inputs.tag }}
+          draft: ${{ inputs.draft }}
+          prerelease: ${{ inputs.prerelease }}
+          generate_release_notes: true
+          files: |
+            dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

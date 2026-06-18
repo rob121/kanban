@@ -1,0 +1,218 @@
+{{define "card-detail"}}
+<div id="card-detail-panel" data-card-id="{{.Card.ID}}" class="card-detail-panel">
+    <div id="card-detail-view">
+        <div class="card-detail-toolbar">
+            <span class="badge rounded-pill text-bg-light border card-detail-mode">Viewing</span>
+            {{if .Access.CanUpdate}}
+            <button type="button" class="btn btn-sm btn-primary card-detail-edit-btn">Edit</button>
+            {{end}}
+        </div>
+
+        <div class="card-detail-meta-panel">
+            <div class="card-detail-meta-cell">
+                <span class="card-detail-meta-label">Priority</span>
+                <span class="card-detail-meta-value d-inline-flex align-items-center gap-1">
+                    <span class="priority-dot priority-{{.Card.Priority}}"></span>
+                    {{priorityLabel .Card.Priority}}
+                </span>
+            </div>
+            <div class="card-detail-meta-cell">
+                <span class="card-detail-meta-label">Due</span>
+                <span class="card-detail-meta-value">{{if .Card.DueDate}}{{.Card.DueDate.Format "Jan 2, 2006"}}{{else}}<span class="text-muted">—</span>{{end}}</span>
+            </div>
+            <div class="card-detail-meta-cell">
+                <span class="card-detail-meta-label">Created</span>
+                <span class="card-detail-meta-value">{{.Card.CreatedAt.Format "Jan 2, 2006"}}</span>
+            </div>
+            <div class="card-detail-meta-cell">
+                <span class="card-detail-meta-label">Creator</span>
+                <span class="card-detail-meta-value">
+                    {{if .Card.Creator}}
+                    <span class="card-detail-meta-person">
+                        {{template "user-avatar" (dict "User" .Card.Creator "Size" "sm")}}
+                        <span class="card-detail-meta-person-name">{{.Card.Creator.Name}}</span>
+                    </span>
+                    {{else}}
+                    <span class="text-muted">Unknown</span>
+                    {{end}}
+                </span>
+            </div>
+            <div class="card-detail-meta-cell">
+                <span class="card-detail-meta-label">Assignee</span>
+                <span class="card-detail-meta-value">
+                    {{if .Card.Assignee}}
+                    <span class="card-detail-meta-person">
+                        {{template "user-avatar" (dict "User" .Card.Assignee "Size" "sm")}}
+                        <span class="card-detail-meta-person-name">{{.Card.Assignee.Name}}</span>
+                    </span>
+                    {{else}}
+                    <span class="text-muted">Unassigned</span>
+                    {{end}}
+                </span>
+            </div>
+        </div>
+
+        {{if .Card.Tags}}
+        <section class="card-detail-section">
+            <h3 class="card-detail-section-title">Tags</h3>
+            <div class="d-flex flex-wrap gap-1">
+                {{range .Card.Tags}}
+                <span class="kanban-card-tag tag-pill-badge {{tagColor .Color}}">{{.Name}}</span>
+                {{end}}
+            </div>
+        </section>
+        {{end}}
+
+        <section class="card-detail-section">
+            <h3 class="card-detail-section-title">Description</h3>
+            {{if .Card.Description}}
+            <div class="card-detail-description-box">{{.Card.Description}}</div>
+            {{else}}
+            <p class="card-detail-empty mb-0">No description provided.</p>
+            {{end}}
+        </section>
+
+        <section class="card-detail-attachments" id="card-detail-attachments">
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                <h3 class="card-detail-section-title mb-0">Attachments</h3>
+                <span class="badge rounded-pill text-bg-light border" id="attachments-count">{{len .Card.Attachments}}</span>
+            </div>
+
+            <ul id="attachments-list" class="card-detail-attachment-list list-unstyled mb-0">
+                {{range .Card.Attachments}}
+                {{template "attachment" (dict "Attachment" . "Access" $.Access "User" $.User)}}
+                {{else}}
+                <li class="card-detail-empty mb-0" id="attachments-empty">No attachments yet.</li>
+                {{end}}
+            </ul>
+
+            {{if .Access.CanAttach}}
+            <div class="card-detail-attachment-upload mt-3">
+                <form method="post" action="/cards/{{.Card.ID}}/attachments" class="attachment-form" data-card-id="{{.Card.ID}}">
+                    <div class="attachment-dropzone" tabindex="0" role="button" aria-label="Drop files to upload or click to browse">
+                        <input type="file" class="attachment-dropzone-input visually-hidden" id="attachment-file-{{.Card.ID}}" name="file" tabindex="-1" aria-hidden="true">
+                        <div class="attachment-dropzone-idle">
+                            <span class="attachment-dropzone-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            </span>
+                            <span class="attachment-dropzone-title">Drop files to attach</span>
+                            <span class="attachment-dropzone-hint">or click to browse · max 10 MB · private to board members</span>
+                        </div>
+                        <div class="attachment-dropzone-busy d-none" aria-live="polite">
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span>Uploading…</span>
+                        </div>
+                    </div>
+                    <div id="attachment-form-error" class="alert alert-danger d-none mt-2 mb-0 py-2 small" role="alert"></div>
+                </form>
+            </div>
+            {{end}}
+        </section>
+
+        <section class="card-detail-comments" id="card-detail-comments">
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                <h3 class="card-detail-section-title mb-0">Comments</h3>
+                <span class="badge rounded-pill text-bg-light border" id="comments-count">{{.CommentsTotal}}</span>
+            </div>
+
+            <div id="comments-list" class="card-detail-comment-list">
+                {{range .Card.Comments}}
+                {{template "comment" .}}
+                {{else}}
+                <p class="card-detail-empty mb-0" id="comments-empty">No comments yet — be the first to reply.</p>
+                {{end}}
+            </div>
+
+            {{if gt .CommentsPages 1}}
+            <nav class="comments-pagination mt-3" aria-label="Comment pages">
+                <div class="d-flex align-items-center justify-content-between gap-2">
+                    {{if gt .CommentsPage 1}}
+                    <button type="button" class="btn btn-sm btn-outline-secondary comments-page-btn" data-comments-page="{{sub .CommentsPage 1}}">← Newer</button>
+                    {{else}}
+                    <span></span>
+                    {{end}}
+                    <span class="text-muted small comments-page-status">Page {{.CommentsPage}} of {{.CommentsPages}}</span>
+                    {{if lt .CommentsPage .CommentsPages}}
+                    <button type="button" class="btn btn-sm btn-outline-secondary comments-page-btn" data-comments-page="{{add .CommentsPage 1}}">Older →</button>
+                    {{else}}
+                    <span></span>
+                    {{end}}
+                </div>
+            </nav>
+            {{end}}
+
+            <div class="card-detail-composer">
+                <form method="post" action="/cards/{{.Card.ID}}/comments" class="comment-form" data-card-id="{{.Card.ID}}">
+                    <label class="form-label" for="comment-body-{{.Card.ID}}">Add a comment</label>
+                    <textarea class="form-control" id="comment-body-{{.Card.ID}}" name="body" rows="3" placeholder="Write a comment…" required></textarea>
+                    <div id="comment-form-error" class="alert alert-danger d-none mt-2 mb-0 py-2 small" role="alert"></div>
+                    <div class="d-flex justify-content-end mt-2">
+                        <button type="submit" class="btn btn-sm btn-primary">Post comment</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <span class="visually-hidden" data-card-title="{{.Card.Title}}">{{.Card.Title}}</span>
+
+    {{if .Access.CanUpdate}}
+    <form method="post" action="/cards/{{.Card.ID}}" id="card-edit-form" class="d-none card-edit-form">
+        <div class="card-detail-toolbar card-detail-toolbar-edit">
+            <span class="badge rounded-pill text-bg-primary card-detail-mode">Editing</span>
+            <div class="d-flex align-items-center gap-2 ms-auto">
+                <button type="button" class="btn btn-sm btn-outline-secondary card-detail-cancel-btn">Cancel</button>
+                <button type="submit" class="btn btn-sm btn-primary">Save changes</button>
+            </div>
+        </div>
+
+        <div class="card-edit-form-body">
+        <div class="card-detail-section">
+            <label class="form-label" for="edit-title">Title</label>
+            <input type="text" class="form-control" id="edit-title" name="title" value="{{.Card.Title}}" required>
+        </div>
+        <div class="card-detail-section">
+            <label class="form-label" for="edit-description">Description</label>
+            <textarea class="form-control" id="edit-description" name="description" rows="6" placeholder="Add more detail…">{{.Card.Description}}</textarea>
+        </div>
+        <div class="card-detail-section">
+            {{template "tag-pills" (dict "Prefix" "edit" "Tags" .BoardTags "Selected" .SelectedTags "BoardID" .Card.BoardID)}}
+        </div>
+        <div class="card-detail-section">
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <label class="form-label" for="edit-priority">Priority</label>
+                    <select class="form-select" id="edit-priority" name="priority">
+                        <option value="low" {{if eq .Card.Priority "low"}}selected{{end}}>Low</option>
+                        <option value="medium" {{if eq .Card.Priority "medium"}}selected{{end}}>Medium</option>
+                        <option value="high" {{if eq .Card.Priority "high"}}selected{{end}}>High</option>
+                    </select>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label" for="edit-due">Due date</label>
+                    <input type="date" class="form-control" id="edit-due" name="due_date" {{if .Card.DueDate}}value="{{.Card.DueDate.Format "2006-01-02"}}"{{end}}>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="edit-assignee">Assigned to</label>
+                    <select class="form-select" id="edit-assignee" name="assignee_id">
+                        <option value="">Unassigned</option>
+                        {{range .Participants}}
+                        <option value="{{.ID}}" {{if and $.Card.AssigneeID (eq .ID $.Card.AssigneeID)}}selected{{end}}>{{.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <div class="card-detail-form-actions">
+            <button type="submit" class="btn btn-primary btn-sm">Save changes</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm card-detail-cancel-btn">Cancel</button>
+            {{if .Access.CanDelete}}
+            <button type="button" class="btn btn-outline-danger btn-sm ms-auto archive-card-btn" data-card-id="{{.Card.ID}}">Archive</button>
+            {{end}}
+        </div>
+    </form>
+    {{end}}
+</div>
+{{end}}
