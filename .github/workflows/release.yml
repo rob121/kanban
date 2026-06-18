@@ -1,10 +1,7 @@
 name: Release
 
-# Manual: Actions → Release → Run workflow
-# Or push a version tag: git tag v1.0.0 && git push origin v1.0.0
 on:
   workflow_dispatch:
-    branches: [main]
     inputs:
       tag:
         description: Release tag (e.g. v1.0.0)
@@ -20,9 +17,6 @@ on:
         required: false
         type: boolean
         default: false
-  push:
-    tags:
-      - v*
 
 permissions:
   contents: write
@@ -31,6 +25,7 @@ jobs:
   build:
     name: build (${{ matrix.suffix }})
     runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
@@ -38,12 +33,15 @@ jobs:
           - goos: linux
             goarch: amd64
             suffix: linux-amd64
+
           - goos: linux
             goarch: arm64
             suffix: linux-arm64
+
           - goos: darwin
             goarch: arm64
             suffix: darwin-arm64
+
           - goos: windows
             goarch: amd64
             suffix: windows-amd64.exe
@@ -65,7 +63,12 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
-        run: go build -trimpath -ldflags="-s -w" -o "kanban-${{ matrix.suffix }}" .
+        run: |
+          go build \
+            -trimpath \
+            -ldflags="-s -w" \
+            -o "kanban-${{ matrix.suffix }}" \
+            .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -78,9 +81,22 @@ jobs:
     name: Publish release
     needs: build
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Create tag if needed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if ! git rev-parse "${{ inputs.tag }}" >/dev/null 2>&1; then
+            git tag "${{ inputs.tag }}"
+            git push origin "${{ inputs.tag }}"
+          fi
 
       - name: Download artifacts
         uses: actions/download-artifact@v8
@@ -89,21 +105,22 @@ jobs:
           merge-multiple: true
 
       - name: Add config example
-        run: cp config.example.json dist/
+        run: |
+          cp config.example.json dist/
 
-      - name: Write checksums
+      - name: Generate checksums
         working-directory: dist
         run: |
-          sha256sum kanban-* config.example.json > SHA256SUMS.txt
+          sha256sum * > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-          name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-          draft: ${{ github.event_name == 'workflow_dispatch' && inputs.draft || false }}
-          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+          tag_name: ${{ inputs.tag }}
+          name: ${{ inputs.tag }}
+          draft: ${{ inputs.draft }}
+          prerelease: ${{ inputs.prerelease }}
           generate_release_notes: true
           files: |
             dist/*
