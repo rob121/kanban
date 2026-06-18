@@ -83,6 +83,9 @@ func GetUser(r *http.Request) (*models.User, bool) {
 	if user.Archived {
 		return nil, false
 	}
+	if user.IsAPIUser() {
+		return nil, false
+	}
 	return &user, true
 }
 
@@ -114,6 +117,9 @@ func FindOAuthUser(gothUser goth.User) (*models.User, error) {
 		return nil, err
 	}
 	if user.Archived {
+		return nil, ErrOAuthUserNotFound
+	}
+	if user.IsAPIUser() {
 		return nil, ErrOAuthUserNotFound
 	}
 

@@ -1,0 +1,64 @@
+{{define "content"}}
+<div class="container py-4" style="max-width: 720px;">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/admin/users">Users</a></li>
+            <li class="breadcrumb-item active">{{.Data.NewUser.Name}}</li>
+        </ol>
+    </nav>
+
+    <h1 class="h3 fw-semibold mb-1">{{if .Data.Regenerated}}API token regenerated{{else}}API user created{{end}}</h1>
+    <p class="text-muted mb-4">Copy the bearer token below. It is shown only once. API users cannot sign in to the web UI.</p>
+
+    <div class="alert alert-warning">Add this user as a board member to grant permissions. Board access follows the same member permission flags as web users.</div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Name</dt>
+                <dd class="col-sm-9">{{.Data.NewUser.Name}}</dd>
+                <dt class="col-sm-3">Email</dt>
+                <dd class="col-sm-9">{{.Data.NewUser.Email}}</dd>
+                <dt class="col-sm-3">API base</dt>
+                <dd class="col-sm-9"><code>/api/v1</code></dd>
+                <dt class="col-sm-3">Docs</dt>
+                <dd class="col-sm-9"><a href="{{.Data.DocsURL}}">{{.Data.DocsURL}}</a></dd>
+                <dt class="col-sm-3">Bearer token</dt>
+                <dd class="col-sm-9"><code id="api-token" class="user-select-all">{{.Data.APIToken}}</code></dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <h2 class="h6 fw-semibold mb-0">Authorization header</h2>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="copy-token-btn">Copy token</button>
+            </div>
+            <textarea class="form-control font-monospace small" id="auth-header" rows="2" readonly>Authorization: Bearer {{.Data.APIToken}}</textarea>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a href="/admin/users/{{.Data.NewUser.ID}}" class="btn btn-primary">Edit user</a>
+        <a href="/admin/users" class="btn btn-outline-secondary">Back to users</a>
+        <a href="{{.Data.DocsURL}}" class="btn btn-outline-secondary" target="_blank" rel="noopener">API docs</a>
+    </div>
+</div>
+<script>
+(function () {
+    var btn = document.getElementById('copy-token-btn');
+    var token = document.getElementById('api-token');
+    if (!btn || !token) return;
+    btn.addEventListener('click', function () {
+        var value = token.textContent;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(value).then(function () {
+                btn.textContent = 'Copied!';
+                setTimeout(function () { btn.textContent = 'Copy token'; }, 2000);
+            });
+        }
+    });
+})();
+</script>
+{{end}}

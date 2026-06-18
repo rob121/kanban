@@ -35,6 +35,7 @@ func (h *AdminHandler) UserCreate(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		_ = h.Render.Render(w, "admin/user_new.html", buildPage(w, r, "Invite User", admin, map[string]any{
 			"MailEnabled": mailer.Enabled(),
+			"UserType":    models.UserTypeWeb,
 		}))
 		return
 	}
@@ -44,11 +45,16 @@ func (h *AdminHandler) UserCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userType := strings.TrimSpace(r.FormValue("user_type"))
+	if userType == "" {
+		userType = models.UserTypeWeb
+	}
+
 	newUser := models.User{
-		Name:      strings.TrimSpace(r.FormValue("name")),
-		Email:     strings.TrimSpace(strings.ToLower(r.FormValue("email"))),
-		IsAdmin:   r.FormValue("is_admin") == "on",
-		Provider:  "local",
+		Name:     strings.TrimSpace(r.FormValue("name")),
+		Email:    strings.TrimSpace(strings.ToLower(r.FormValue("email"))),
+		IsAdmin:  r.FormValue("is_admin") == "on",
+		UserType: userType,
 	}
 	username := strings.TrimSpace(r.FormValue("username"))
 	password := r.FormValue("password")
@@ -58,12 +64,24 @@ func (h *AdminHandler) UserCreate(w http.ResponseWriter, r *http.Request) {
 		"Email":       newUser.Email,
 		"Username":    username,
 		"IsAdmin":     newUser.IsAdmin,
+		"UserType":    userType,
 		"MailEnabled": mailer.Enabled(),
 		"InviteNow":   r.FormValue("invite_now") == "on",
 	}
 
-	if newUser.Name == "" || newUser.Email == "" || username == "" {
-		_ = h.Render.Render(w, "admin/user_new.html", buildPageError(w, r, "Invite User", admin, formData, "Name, username, and email are required"))
+	if newUser.Name == "" || newUser.Email == "" {
+		_ = h.Render.Render(w, "admin/user_new.html", buildPageError(w, r, "Invite User", admin, formData, "Name and email are required"))
+		return
+	}
+
+	if userType == models.UserTypeAPI {
+		h.createAPIUser(w, r, admin, newUser, username, formData)
+		return
+	}
+
+	newUser.Provider = "local"
+	if username == "" {
+		_ = h.Render.Render(w, "admin/user_new.html", buildPageError(w, r, "Invite User", admin, formData, "Username is required for web users"))
 		return
 	}
 	if password == "" {
@@ -117,6 +135,43 @@ func (h *AdminHandler) UserCreate(w http.ResponseWriter, r *http.Request) {
 	}))
 }
 
+func (h *AdminHandler) createAPIUser(w http.ResponseWriter, r *http.Request, admin *models.User, newUser models.User, username string, formData map[string]any) {
+	conflictQuery := database.DB.Where("email = ?", newUser.Email)
+	if username != "" {
+		conflictQuery = database.DB.Where("email = ? OR username = ?", newUser.Email, username)
+	}
+	var conflict models.User
+	if err := conflictQuery.First(&conflict).Error; err == nil {
+		_ = h.Render.Render(w, "admin/user_new.html", buildPageError(w, r, "Invite User", admin, formData, "Email or username already in use"))
+		return
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+
+	newUser.Provider = "api"
+	if username != "" {
+		newUser.Username = &username
+	}
+
+	if err := database.DB.Create(&newUser).Error; err != nil {
+		http.Error(w, "could not create user", http.StatusInternalServerError)
+		return
+	}
+
+	token, err := auth.CreateAPIToken(newUser.ID, "default")
+	if err != nil {
+		http.Error(w, "could not create api token", http.StatusInternalServerError)
+		return
+	}
+
+	if err := auth.SetAPITokenFlash(w, r, token, false); err != nil {
+		http.Error(w, "could not save token", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/admin/users/"+strconv.FormatUint(uint64(newUser.ID), 10)+"/token", http.StatusSeeOther)
+}
+
 func (h *AdminHandler) UserEdit(w http.ResponseWriter, r *http.Request) {
 	admin, _ := auth.GetUser(r)
 	userID, err := pathUint(r, "id")
@@ -134,12 +189,16 @@ func (h *AdminHandler) UserEdit(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		assigned, _ := users.AssignedCardCount(editUser.ID)
 		canDelete, deleteReason := users.CanHardDelete(editUser.ID)
+		var apiToken models.APIToken
+		hasToken := editUser.IsAPIUser() && database.DB.Where("user_id = ?", editUser.ID).Order("created_at desc").First(&apiToken).Error == nil
 		_ = h.Render.Render(w, "admin/user_edit.html", buildPage(w, r, "Edit User", admin, map[string]any{
 			"EditUser":       editUser,
 			"AssignedCards":  assigned,
 			"CanDeleteUser":  canDelete,
 			"DeleteReason":   deleteReason,
 			"IsSelf":         admin.ID == editUser.ID,
+			"HasAPIToken":    hasToken,
+			"APITokenPrefix": apiToken.Prefix,
 		}))
 		return
 	}
@@ -152,6 +211,31 @@ func (h *AdminHandler) UserEdit(w http.ResponseWriter, r *http.Request) {
 	editUser.Name = strings.TrimSpace(r.FormValue("name"))
 	editUser.Email = strings.TrimSpace(strings.ToLower(r.FormValue("email")))
 	editUser.IsAdmin = r.FormValue("is_admin") == "on"
+
+	if editUser.IsAPIUser() {
+		if editUser.Name == "" || editUser.Email == "" {
+			_ = h.Render.Render(w, "admin/user_edit.html", buildPageError(w, r, "Edit User", admin, map[string]any{
+				"EditUser": editUser,
+			}, "Name and email are required"))
+			return
+		}
+		var conflict models.User
+		if err := database.DB.Where("id <> ? AND email = ?", editUser.ID, editUser.Email).First(&conflict).Error; err == nil {
+			_ = h.Render.Render(w, "admin/user_edit.html", buildPageError(w, r, "Edit User", admin, map[string]any{
+				"EditUser": editUser,
+			}, "Email already in use"))
+			return
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "database error", http.StatusInternalServerError)
+			return
+		}
+		if err := database.DB.Save(&editUser).Error; err != nil {
+			http.Error(w, "could not save user", http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+		return
+	}
 
 	if editUser.Provider != "google" {
 		editUser.AvatarURL = strings.TrimSpace(r.FormValue("avatar_url"))
@@ -203,6 +287,64 @@ func (h *AdminHandler) UserEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+func (h *AdminHandler) UserRegenerateToken(w http.ResponseWriter, r *http.Request) {
+	userID, err := pathUint(r, "id")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	var editUser models.User
+	if err := database.DB.First(&editUser, userID).Error; err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	if !editUser.IsAPIUser() {
+		http.NotFound(w, r)
+		return
+	}
+
+	token, err := auth.ReplaceAPIToken(editUser.ID, "default")
+	if err != nil {
+		http.Error(w, "could not regenerate token", http.StatusInternalServerError)
+		return
+	}
+
+	if err := auth.SetAPITokenFlash(w, r, token, true); err != nil {
+		http.Error(w, "could not save token", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/admin/users/"+strconv.FormatUint(uint64(userID), 10)+"/token", http.StatusSeeOther)
+}
+
+func (h *AdminHandler) UserShowToken(w http.ResponseWriter, r *http.Request) {
+	admin, _ := auth.GetUser(r)
+	userID, err := pathUint(r, "id")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	token, regenerated, ok := auth.ConsumeAPITokenFlash(w, r)
+	if !ok {
+		http.Redirect(w, r, "/admin/users/"+strconv.FormatUint(uint64(userID), 10), http.StatusSeeOther)
+		return
+	}
+
+	var editUser models.User
+	if err := database.DB.First(&editUser, userID).Error; err != nil || !editUser.IsAPIUser() {
+		http.NotFound(w, r)
+		return
+	}
+
+	_ = h.Render.Render(w, "admin/api_user_created.html", buildPage(w, r, "API Token", admin, map[string]any{
+		"NewUser":     editUser,
+		"APIToken":    token,
+		"DocsURL":     "/api/v1/docs/",
+		"Regenerated": regenerated,
+	}))
 }
 
 func (h *AdminHandler) UserArchive(w http.ResponseWriter, r *http.Request) {

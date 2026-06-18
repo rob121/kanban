@@ -14,6 +14,7 @@ type User struct {
 	PasswordHash string  `gorm:"size:255"`
 	AvatarURL    string  `gorm:"size:512"`
 	Provider     string  `gorm:"size:64"`
+	UserType     string  `gorm:"size:8;not null;default:'web'"`
 	IsAdmin      bool   `gorm:"default:false"`
 	Archived     bool   `gorm:"default:false;index"`
 	Theme        string `gorm:"size:8;not null;default:'light'"`
@@ -26,6 +27,25 @@ func (u User) UsernameString() string {
 		return ""
 	}
 	return *u.Username
+}
+
+func (u User) IsAPIUser() bool {
+	return u.UserType == UserTypeAPI
+}
+
+const UserTypeWeb = "web"
+const UserTypeAPI = "api"
+
+type APIToken struct {
+	ID         uint `gorm:"primaryKey"`
+	UserID     uint `gorm:"index;not null"`
+	Name       string `gorm:"size:128;not null;default:'default'"`
+	Prefix     string `gorm:"size:16;index;not null"`
+	TokenHash  string `gorm:"size:64;not null"`
+	LastUsedAt *time.Time
+	CreatedAt  time.Time
+
+	User User `gorm:"foreignKey:UserID"`
 }
 
 type Board struct {

@@ -37,6 +37,7 @@ func Connect() error {
 
 	if err := db.AutoMigrate(
 		&models.User{},
+		&models.APIToken{},
 		&models.Board{},
 		&models.BoardTag{},
 		&models.BoardMember{},

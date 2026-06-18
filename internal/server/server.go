@@ -7,6 +7,7 @@ import (
 
 	"github.com/rob121/kanban/internal/handlers"
 	"github.com/rob121/kanban/internal/middleware"
+	apiv1 "github.com/rob121/kanban/internal/api/v1"
 )
 
 type Server struct {
@@ -49,7 +50,7 @@ func New(views, static embed.FS) (*Server, error) {
 }
 
 func (s *Server) Handler() http.Handler {
-	return middleware.EnsureCSRF(middleware.CSRF(s.mux))
+	return middleware.EnsureCSRF(middleware.SkipCSRFForAPI(s.mux))
 }
 
 func (s *Server) routes() {
@@ -69,9 +70,11 @@ func (s *Server) routes() {
 	s.mux.Handle("GET /admin/users/new", middleware.RequireAuth(middleware.RequireAdmin(http.HandlerFunc(s.admin.UserCreate))))
 	s.mux.Handle("POST /admin/users", middleware.RequireAuth(middleware.RequireAdmin(http.HandlerFunc(s.admin.UserCreate))))
 	s.mux.Handle("GET /admin/users/{id}", middleware.RequireAuth(middleware.RequireAdmin(http.HandlerFunc(s.admin.UserEdit))))
+	s.mux.Handle("GET /admin/users/{id}/token", middleware.RequireAuth(middleware.RequireAdmin(http.HandlerFunc(s.admin.UserShowToken))))
 	s.mux.Handle("POST /admin/users/{id}", middleware.RequireAuth(middleware.RequireAdmin(http.HandlerFunc(s.admin.UserEdit))))
 	s.mux.Handle("POST /admin/users/{id}/archive", middleware.RequireAuth(middleware.RequireAdmin(http.HandlerFunc(s.admin.UserArchive))))
 	s.mux.Handle("POST /admin/users/{id}/delete", middleware.RequireAuth(middleware.RequireAdmin(http.HandlerFunc(s.admin.UserDelete))))
+	s.mux.Handle("POST /admin/users/{id}/regenerate-token", middleware.RequireAuth(middleware.RequireAdmin(http.HandlerFunc(s.admin.UserRegenerateToken))))
 
 	s.mux.Handle("GET /boards", middleware.RequireAuth(http.HandlerFunc(s.boards.Index)))
 	s.mux.Handle("GET /boards/new", middleware.RequireAuth(http.HandlerFunc(s.boards.Create)))
@@ -105,6 +108,8 @@ func (s *Server) routes() {
 	s.mux.Handle("POST /cards/{id}/attachments", middleware.RequireAuth(http.HandlerFunc(s.attach.Upload)))
 	s.mux.Handle("GET /attachments/{id}", middleware.RequireAuth(http.HandlerFunc(s.attach.Serve)))
 	s.mux.Handle("POST /attachments/{id}/delete", middleware.RequireAuth(http.HandlerFunc(s.attach.Delete)))
+
+	apiv1.Register(s.mux)
 
 	s.mux.Handle("GET /", middleware.RedirectIfAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)

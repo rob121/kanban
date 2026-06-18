@@ -7,42 +7,61 @@
         </ol>
     </nav>
 
-    <h1 class="h3 fw-semibold mb-1">Invite user</h1>
-    <p class="text-muted mb-4">Create a local account. After saving, you can copy sign-in details or send an invite email.</p>
+    <h1 class="h3 fw-semibold mb-1">Create user</h1>
+    <p class="text-muted mb-4">Create a web account or an API-only user with a bearer token.</p>
 
     {{if .Error}}
     <div class="alert alert-danger">{{.Error}}</div>
     {{end}}
 
-    <form method="post" action="/admin/users" class="card shadow-sm border-0">
+    <form method="post" action="/admin/users" class="card shadow-sm border-0" id="user-create-form" data-turbo="false">
         <div class="card-body p-4">
             {{template "csrf" .}}
+            <div class="mb-4">
+                <label class="form-label">Account type</label>
+                <div class="d-flex gap-3">
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" id="user_type_web" name="user_type" value="web" {{if ne .Data.UserType "api"}}checked{{end}}>
+                        <label class="form-check-label" for="user_type_web">Web user</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" id="user_type_api" name="user_type" value="api" {{if eq .Data.UserType "api"}}checked{{end}}>
+                        <label class="form-check-label" for="user_type_api">API user</label>
+                    </div>
+                </div>
+            </div>
             <div class="mb-3">
                 <label for="name" class="form-label">Display name</label>
                 <input type="text" class="form-control" id="name" name="name" value="{{with .Data}}{{.Name}}{{end}}" required autofocus>
             </div>
-            <div class="mb-3">
+            <div class="mb-3" id="username-group">
                 <label for="username" class="form-label">Username</label>
-                <input type="text" class="form-control" id="username" name="username" value="{{with .Data}}{{.Username}}{{end}}" required autocomplete="off">
+                <input type="text" class="form-control" id="username" name="username" value="{{with .Data}}{{.Username}}{{end}}" autocomplete="off">
+                <div class="form-text" id="username-help">Required for web sign-in.</div>
             </div>
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
                 <input type="email" class="form-control" id="email" name="email" value="{{with .Data}}{{.Email}}{{end}}" required>
-                <div class="form-text">If they later sign in with Google using this email, the account will be linked.</div>
+                <div class="form-text" id="email-help">Web users can later link Google sign-in with this email.</div>
             </div>
-            <div class="mb-3">
+            <div class="mb-3" id="password-group">
                 <label for="password" class="form-label">Temporary password</label>
-                <input type="password" class="form-control" id="password" name="password" required autocomplete="new-password">
+                <input type="password" class="form-control" id="password" name="password" autocomplete="new-password">
             </div>
+            <div class="mb-3" id="invite-email-group">
             {{if .Data.MailEnabled}}
-            <div class="mb-3 form-check">
-                <input type="checkbox" class="form-check-input" id="invite_now" name="invite_now" {{if ne .Data.InviteNow false}}checked{{end}}>
-                <label class="form-check-label" for="invite_now">Send invite email now</label>
-                <div class="form-text">Emails the sign-in URL, username, and temporary password to the address above.</div>
-            </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="invite_now" name="invite_now" {{if ne .Data.InviteNow false}}checked{{end}}>
+                    <label class="form-check-label" for="invite_now">Send invite email now</label>
+                    <div class="form-text">Emails the sign-in URL, username, and temporary password to the address above.</div>
+                </div>
             {{else}}
-            <div class="alert alert-secondary py-2 small mb-3">Email is not configured. You will be able to copy invite details after creating the user.</div>
+                <div class="alert alert-secondary py-2 small mb-0">Email is not configured. You will be able to copy invite details after creating the user.</div>
             {{end}}
+            </div>
+            <div class="alert alert-secondary py-2 small mb-3 d-none" id="api-help">
+                API users receive a bearer token and use <code>/api/v1</code>. They cannot sign in to the web UI. Add them to boards as members to grant permissions.
+            </div>
             <div class="mb-4 form-check">
                 <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin" {{with .Data}}{{if .IsAdmin}}checked{{end}}{{end}}>
                 <label class="form-check-label" for="is_admin">Administrator</label>
@@ -54,4 +73,26 @@
         </div>
     </form>
 </div>
+<script>
+(function () {
+    var web = document.getElementById('user_type_web');
+    var api = document.getElementById('user_type_api');
+    var passwordGroup = document.getElementById('password-group');
+    var inviteGroup = document.getElementById('invite-email-group');
+    var username = document.getElementById('username');
+    var apiHelp = document.getElementById('api-help');
+    var emailHelp = document.getElementById('email-help');
+    function sync() {
+        var isAPI = api && api.checked;
+        if (passwordGroup) passwordGroup.classList.toggle('d-none', isAPI);
+        if (inviteGroup) inviteGroup.classList.toggle('d-none', isAPI);
+        if (apiHelp) apiHelp.classList.toggle('d-none', !isAPI);
+        if (username) username.required = !isAPI;
+        if (emailHelp) emailHelp.classList.toggle('d-none', isAPI);
+    }
+    if (web) web.addEventListener('change', sync);
+    if (api) api.addEventListener('change', sync);
+    sync();
+})();
+</script>
 {{end}}

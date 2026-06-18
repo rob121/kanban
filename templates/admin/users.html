@@ -21,6 +21,7 @@
                         <th>Username</th>
                         <th>Email</th>
                         <th>Provider</th>
+                        <th>Type</th>
                         <th>Admin</th>
                         <th>Status</th>
                         <th></th>
@@ -35,6 +36,7 @@
                         <td>{{if .Username}}{{.UsernameString}}{{else}}<span class="text-muted">—</span>{{end}}</td>
                         <td>{{.Email}}</td>
                         <td><span class="badge text-bg-light border">{{.Provider}}</span></td>
+                        <td>{{if .IsAPIUser}}<span class="badge text-bg-info">API</span>{{else}}<span class="badge text-bg-light border">Web</span>{{end}}</td>
                         <td>{{if .IsAdmin}}<span class="badge text-bg-primary">Admin</span>{{else}}<span class="text-muted">—</span>{{end}}</td>
                         <td>{{if .Archived}}<span class="badge text-bg-secondary">Archived</span>{{else}}<span class="badge text-bg-success">Active</span>{{end}}</td>
                         <td class="text-end">
@@ -44,7 +46,7 @@
                     {{end}}
                     {{else}}
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-4">No users yet. <a href="/admin/users/new">Invite the first user</a>.</td>
+                        <td colspan="9" class="text-center text-muted py-4">No users yet. <a href="/admin/users/new">Invite the first user</a>.</td>
                     </tr>
                     {{end}}
                 </tbody>

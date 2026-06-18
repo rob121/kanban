@@ -17,9 +17,11 @@
         <div class="card-body p-4 d-flex align-items-center gap-3">
             {{template "user-avatar" (dict "User" .Data.EditUser "Size" "lg")}}
             <div>
-                <div class="fw-semibold">{{.Data.EditUser.Name}}{{if .Data.EditUser.Archived}} <span class="badge text-bg-secondary">Archived</span>{{end}}</div>
+                <div class="fw-semibold">{{.Data.EditUser.Name}}{{if .Data.EditUser.Archived}} <span class="badge text-bg-secondary">Archived</span>{{end}}{{if .Data.EditUser.IsAPIUser}} <span class="badge text-bg-info">API</span>{{end}}</div>
                 <div class="text-muted small">{{.Data.EditUser.Email}}</div>
-                {{if eq .Data.EditUser.Provider "google"}}
+                {{if .Data.EditUser.IsAPIUser}}
+                <div class="text-muted small mt-1">API-only account — uses bearer token at <code>/api/v1</code></div>
+                {{else if eq .Data.EditUser.Provider "google"}}
                 <div class="text-muted small mt-1">Profile photo from Google account (updated on sign-in)</div>
                 {{else if .Data.EditUser.AvatarURL}}
                 <div class="text-muted small mt-1">Custom profile photo</div>
@@ -30,38 +32,43 @@
         </div>
     </div>
 
-    <form method="post" action="/admin/users/{{.Data.EditUser.ID}}" class="card shadow-sm border-0">
+    <form method="post" action="/admin/users/{{.Data.EditUser.ID}}" class="card shadow-sm border-0" data-turbo="false">
         <div class="card-body p-4">
             {{template "csrf" .}}
             <div class="mb-3">
                 <label for="name" class="form-label">Display name</label>
                 <input type="text" class="form-control" id="name" name="name" value="{{.Data.EditUser.Name}}" required>
             </div>
+            {{if not .Data.EditUser.IsAPIUser}}
             <div class="mb-3">
                 <label for="username" class="form-label">Username</label>
                 <input type="text" class="form-control" id="username" name="username" value="{{.Data.EditUser.UsernameString}}" autocomplete="off">
                 <div class="form-text">Leave blank for OAuth-only accounts.</div>
             </div>
+            {{end}}
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
                 <input type="email" class="form-control" id="email" name="email" value="{{.Data.EditUser.Email}}" required>
             </div>
-            {{if ne .Data.EditUser.Provider "google"}}
+            {{if and (not .Data.EditUser.IsAPIUser) (ne .Data.EditUser.Provider "google")}}
             <div class="mb-3">
                 <label for="avatar_url" class="form-label">Profile photo URL</label>
                 <input type="url" class="form-control" id="avatar_url" name="avatar_url" value="{{.Data.EditUser.AvatarURL}}" placeholder="https://example.com/photo.jpg" autocomplete="off">
                 <div class="form-text">Optional image URL. Leave blank to show initials.</div>
             </div>
             {{end}}
+            {{if not .Data.EditUser.IsAPIUser}}
             <div class="mb-3">
                 <label for="password" class="form-label">New password</label>
                 <input type="password" class="form-control" id="password" name="password" autocomplete="new-password">
                 <div class="form-text">Leave blank to keep the current password.</div>
             </div>
+            {{end}}
             <div class="mb-3">
-                <label class="form-label">Sign-in method</label>
+                <label class="form-label">Account type</label>
                 <div class="form-control-plaintext">
-                    <span class="badge text-bg-light border text-capitalize">{{if .Data.EditUser.Provider}}{{.Data.EditUser.Provider}}{{else}}local{{end}}</span>
+                    {{if .Data.EditUser.IsAPIUser}}<span class="badge text-bg-info">API</span>{{else}}<span class="badge text-bg-light border">Web</span>{{end}}
+                    {{if not .Data.EditUser.IsAPIUser}}<span class="badge text-bg-light border text-capitalize ms-1">{{if .Data.EditUser.Provider}}{{.Data.EditUser.Provider}}{{else}}local{{end}}</span>{{end}}
                 </div>
             </div>
             <div class="mb-4 form-check">
@@ -74,6 +81,25 @@
             </div>
         </div>
     </form>
+
+    {{if .Data.EditUser.IsAPIUser}}
+    <div class="card shadow-sm border-0 mt-4">
+        <div class="card-body p-4">
+            <h2 class="h6 fw-semibold mb-3">API access</h2>
+            <p class="text-muted small mb-3">The full token is shown only once after creation or regeneration. Use the button below to issue a new token.</p>
+            {{if .Data.HasAPIToken}}
+            <p class="text-muted small mb-3">Active token prefix: <code>{{.Data.APITokenPrefix}}…</code></p>
+            {{else}}
+            <p class="text-muted small mb-3">No active token.</p>
+            {{end}}
+            <form method="post" action="/admin/users/{{.Data.EditUser.ID}}/regenerate-token" class="mb-0" data-turbo="false" onsubmit="return confirm('Regenerate API token? The current token will stop working immediately.');">
+                {{template "csrf" .}}
+                <button type="submit" class="btn btn-outline-primary btn-sm">Regenerate token</button>
+            </form>
+            <p class="text-muted small mt-3 mb-0"><a href="/api/v1/docs/" target="_blank" rel="noopener">Open API docs</a></p>
+        </div>
+    </div>
+    {{end}}
 
     {{if not .Data.IsSelf}}
     <div class="card shadow-sm border-0 mt-4">

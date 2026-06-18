@@ -119,6 +119,9 @@ func HardDelete(actorID, userID uint) error {
 	if err := database.DB.Where("user_id = ?", userID).Delete(&models.CardAttachment{}).Error; err != nil {
 		return err
 	}
+	if err := database.DB.Where("user_id = ?", userID).Delete(&models.APIToken{}).Error; err != nil {
+		return err
+	}
 	if err := database.DB.Model(&models.Card{}).Where("creator_id = ?", userID).Update("creator_id", nil).Error; err != nil {
 		return err
 	}

@@ -25,5 +25,8 @@ func AuthenticateLocal(username, password string) (*models.User, error) {
 	if user.Archived {
 		return nil, ErrInvalidCredentials
 	}
+	if user.IsAPIUser() {
+		return nil, ErrInvalidCredentials
+	}
 	return &user, nil
 }

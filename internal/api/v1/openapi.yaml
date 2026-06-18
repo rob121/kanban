@@ -1,0 +1,412 @@
+openapi: 3.0.3
+info:
+  title: Kanban API
+  version: 1.0.0
+  description: |
+    Versioned REST API for Kanban boards and cards.
+
+    Authenticate with a bearer token issued when an API user is created.
+    API users cannot sign in to the web UI; add them as board members to grant permissions.
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+tags:
+  - name: Identity
+  - name: Boards
+  - name: Cards
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API token
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        username:
+          type: string
+        user_type:
+          type: string
+          enum: [web, api]
+        is_admin:
+          type: boolean
+
+    BoardSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        color:
+          type: string
+        archived:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        board_id:
+          type: integer
+        name:
+          type: string
+        position:
+          type: integer
+
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        color:
+          type: string
+        position:
+          type: integer
+
+    Card:
+      type: object
+      properties:
+        id:
+          type: integer
+        board_id:
+          type: integer
+        category_id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high]
+        position:
+          type: integer
+        archived:
+          type: boolean
+        due_date:
+          type: string
+          format: date
+        assignee_id:
+          type: integer
+        owner_id:
+          type: integer
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+
+    CreateCardRequest:
+      type: object
+      required: [board_id, category_id, title]
+      properties:
+        board_id:
+          type: integer
+        category_id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+        due_date:
+          type: string
+          format: date
+        assignee_id:
+          type: integer
+        tag_ids:
+          type: array
+          items:
+            type: integer
+
+    UpdateCardRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+        due_date:
+          type: string
+          format: date
+        assignee_id:
+          type: integer
+          description: Set to 0 to clear assignee
+        owner_id:
+          type: integer
+        tag_ids:
+          type: array
+          items:
+            type: integer
+
+    MoveCardRequest:
+      type: object
+      required: [category_id, position]
+      properties:
+        category_id:
+          type: integer
+        position:
+          type: integer
+
+    CommentRequest:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+
+security:
+  - bearerAuth: []
+
+paths:
+  /me:
+    get:
+      tags: [Identity]
+      summary: Current API user
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /boards:
+    get:
+      tags: [Boards]
+      summary: List accessible boards
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  boards:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BoardSummary'
+
+  /boards/{id}:
+    get:
+      tags: [Boards]
+      summary: Board detail with columns, cards, and tags
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not found
+
+  /boards/{id}/categories:
+    get:
+      tags: [Boards]
+      summary: List columns (categories) on a board
+      description: Returns columns ordered by position. Cards are not included; use `/boards/{id}/cards` or `/boards/{id}` for card data.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+        '404':
+          description: Not found
+
+  /boards/{id}/cards:
+    get:
+      tags: [Cards]
+      summary: List cards on a board
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: archived
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [false, true, all]
+            default: false
+          description: Filter by archived state. Omit or `false` for active cards only, `true` for archived only, `all` for both.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cards:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Card'
+        '404':
+          description: Not found
+
+  /cards/{id}:
+    get:
+      tags: [Cards]
+      summary: Get card
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Card'
+        '404':
+          description: Not found
+    patch:
+      tags: [Cards]
+      summary: Update card
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCardRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Card'
+
+  /cards:
+    post:
+      tags: [Cards]
+      summary: Create card
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCardRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Card'
+
+  /cards/{id}/move:
+    post:
+      tags: [Cards]
+      summary: Move card to another column/position
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveCardRequest'
+      responses:
+        '204':
+          description: Moved
+
+  /cards/{id}/archive:
+    post:
+      tags: [Cards]
+      summary: Archive card
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Archived
+
+  /cards/{id}/comments:
+    post:
+      tags: [Cards]
+      summary: Add comment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentRequest'
+      responses:
+        '201':
+          description: Created
