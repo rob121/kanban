@@ -24,26 +24,21 @@ permissions:
 jobs:
   build:
     name: build (${{ matrix.suffix }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - runner: ubuntu-latest
-            goos: linux
+          - goos: linux
             goarch: amd64
             suffix: linux-amd64
-          - runner: ubuntu-latest
-            goos: linux
+          - goos: linux
             goarch: arm64
             suffix: linux-arm64
-            cross: true
-          - runner: macos-latest
-            goos: darwin
+          - goos: darwin
             goarch: arm64
             suffix: darwin-arm64
-          - runner: windows-latest
-            goos: windows
+          - goos: windows
             goarch: amd64
             suffix: windows-amd64.exe
 
@@ -57,21 +52,12 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Install Linux ARM64 cross-compiler
-        if: matrix.cross == true
-        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
-
       - name: Build
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: 1
-        shell: bash
-        run: |
-          if [ "${{ matrix.cross }}" = "true" ]; then
-            export CC=aarch64-linux-gnu-gcc
-          fi
-          go build -trimpath -ldflags="-s -w" -o "kanban-${{ matrix.suffix }}" .
+          CGO_ENABLED: 0
+        run: go build -trimpath -ldflags="-s -w" -o "kanban-${{ matrix.suffix }}" .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

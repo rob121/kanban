@@ -6,9 +6,9 @@ import (
 	"github.com/rob121/kanban/internal/config"
 	"github.com/rob121/kanban/internal/models"
 	"github.com/rob121/kanban/internal/storage"
+	"github.com/glebarez/sqlite"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )

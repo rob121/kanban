@@ -39,7 +39,7 @@ func (h *MemberHandler) Manage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var allUsers []models.User
-	database.DB.Order("name asc").Find(&allUsers)
+	database.DB.Where("archived = ?", false).Order("name asc").Find(&allUsers)
 
 	var available []models.User
 	for _, u := range allUsers {
@@ -89,15 +89,16 @@ func (h *MemberHandler) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	canCreate, canUpdate, canDelete, canMove, canAttach := parseMemberPermissions(r)
+	canCreate, canUpdate, canDelete, canMove, canAttach, canManageTags := parseMemberPermissions(r)
 	member := models.BoardMember{
-		BoardID:   boardID,
-		UserID:    memberUserID,
-		CanCreate: canCreate,
-		CanUpdate: canUpdate,
-		CanDelete: canDelete,
-		CanMove:   canMove,
-		CanAttach: canAttach,
+		BoardID:       boardID,
+		UserID:        memberUserID,
+		CanCreate:     canCreate,
+		CanUpdate:     canUpdate,
+		CanDelete:     canDelete,
+		CanMove:       canMove,
+		CanAttach:     canAttach,
+		CanManageTags: canManageTags,
 	}
 
 	var existing models.BoardMember
@@ -108,6 +109,7 @@ func (h *MemberHandler) Add(w http.ResponseWriter, r *http.Request) {
 		existing.CanDelete = canDelete
 		existing.CanMove = canMove
 		existing.CanAttach = canAttach
+		existing.CanManageTags = canManageTags
 		database.DB.Save(&existing)
 	} else if errors.Is(err, gorm.ErrRecordNotFound) {
 		database.DB.Create(&member)
@@ -149,7 +151,7 @@ func (h *MemberHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	member.CanCreate, member.CanUpdate, member.CanDelete, member.CanMove, member.CanAttach = parseMemberPermissions(r)
+	member.CanCreate, member.CanUpdate, member.CanDelete, member.CanMove, member.CanAttach, member.CanManageTags = parseMemberPermissions(r)
 	database.DB.Save(&member)
 
 	http.Redirect(w, r, "/boards/"+strconv.FormatUint(uint64(boardID), 10)+"/members", http.StatusSeeOther)

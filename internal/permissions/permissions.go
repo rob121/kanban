@@ -68,6 +68,13 @@ func (a Access) CanManageBoard() bool {
 	return a.IsOwner || a.IsAdmin
 }
 
+func (a Access) CanManageTags() bool {
+	if a.IsOwner || a.IsAdmin {
+		return true
+	}
+	return a.Member != nil && a.Member.CanManageTags
+}
+
 func (a Access) CanManageMembers() bool {
 	return a.IsOwner || a.IsAdmin
 }
@@ -144,7 +151,14 @@ func BoardParticipants(boardID uint) ([]models.User, error) {
 			seen[m.UserID] = true
 		}
 	}
-	return users, nil
+
+	active := make([]models.User, 0, len(users))
+	for _, u := range users {
+		if !u.Archived {
+			active = append(active, u)
+		}
+	}
+	return active, nil
 }
 
 func BoardParticipantIDs(boardID uint) ([]uint, error) {
@@ -159,12 +173,13 @@ func BoardParticipantIDs(boardID uint) ([]uint, error) {
 	return ids, nil
 }
 
-func MemberFromForm(canCreate, canUpdate, canDelete, canMove, canAttach bool) models.BoardMember {
+func MemberFromForm(canCreate, canUpdate, canDelete, canMove, canAttach, canManageTags bool) models.BoardMember {
 	return models.BoardMember{
-		CanCreate: canCreate,
-		CanUpdate: canUpdate,
-		CanDelete: canDelete,
-		CanMove:   canMove,
-		CanAttach: canAttach,
+		CanCreate:     canCreate,
+		CanUpdate:     canUpdate,
+		CanDelete:     canDelete,
+		CanMove:       canMove,
+		CanAttach:     canAttach,
+		CanManageTags: canManageTags,
 	}
 }

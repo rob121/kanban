@@ -8,7 +8,7 @@
     </nav>
 
     <h1 class="h3 fw-semibold mb-1">Invite user</h1>
-    <p class="text-muted mb-4">Create a local account. Share the username and password with the user so they can sign in.</p>
+    <p class="text-muted mb-4">Create a local account. After saving, you can copy sign-in details or send an invite email.</p>
 
     {{if .Error}}
     <div class="alert alert-danger">{{.Error}}</div>
@@ -34,6 +34,15 @@
                 <label for="password" class="form-label">Temporary password</label>
                 <input type="password" class="form-control" id="password" name="password" required autocomplete="new-password">
             </div>
+            {{if .Data.MailEnabled}}
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="invite_now" name="invite_now" {{if ne .Data.InviteNow false}}checked{{end}}>
+                <label class="form-check-label" for="invite_now">Send invite email now</label>
+                <div class="form-text">Emails the sign-in URL, username, and temporary password to the address above.</div>
+            </div>
+            {{else}}
+            <div class="alert alert-secondary py-2 small mb-3">Email is not configured. You will be able to copy invite details after creating the user.</div>
+            {{end}}
             <div class="mb-4 form-check">
                 <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin" {{with .Data}}{{if .IsAdmin}}checked{{end}}{{end}}>
                 <label class="form-check-label" for="is_admin">Administrator</label>

@@ -38,7 +38,7 @@ func (h *TagHandler) Manage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	access, err := permissions.GetAccess(user, boardID)
-	if err != nil || !access.CanManageBoard() {
+	if err != nil || !access.CanManageTags() {
 		http.NotFound(w, r)
 		return
 	}
@@ -73,7 +73,7 @@ func (h *TagHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := requireBoardPerm(w, r, user, boardID, permissions.Access.CanManageBoard); !ok {
+	if _, ok := requireBoardPerm(w, r, user, boardID, permissions.Access.CanManageTags); !ok {
 		return
 	}
 
@@ -116,7 +116,7 @@ func (h *TagHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := requireBoardPerm(w, r, user, boardID, permissions.Access.CanManageBoard); !ok {
+	if _, ok := requireBoardPerm(w, r, user, boardID, permissions.Access.CanManageTags); !ok {
 		return
 	}
 

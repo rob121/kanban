@@ -70,6 +70,8 @@ func (s *Server) routes() {
 	s.mux.Handle("POST /admin/users", middleware.RequireAuth(middleware.RequireAdmin(http.HandlerFunc(s.admin.UserCreate))))
 	s.mux.Handle("GET /admin/users/{id}", middleware.RequireAuth(middleware.RequireAdmin(http.HandlerFunc(s.admin.UserEdit))))
 	s.mux.Handle("POST /admin/users/{id}", middleware.RequireAuth(middleware.RequireAdmin(http.HandlerFunc(s.admin.UserEdit))))
+	s.mux.Handle("POST /admin/users/{id}/archive", middleware.RequireAuth(middleware.RequireAdmin(http.HandlerFunc(s.admin.UserArchive))))
+	s.mux.Handle("POST /admin/users/{id}/delete", middleware.RequireAuth(middleware.RequireAdmin(http.HandlerFunc(s.admin.UserDelete))))
 
 	s.mux.Handle("GET /boards", middleware.RequireAuth(http.HandlerFunc(s.boards.Index)))
 	s.mux.Handle("GET /boards/new", middleware.RequireAuth(http.HandlerFunc(s.boards.Create)))

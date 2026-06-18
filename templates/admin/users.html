@@ -22,6 +22,7 @@
                         <th>Email</th>
                         <th>Provider</th>
                         <th>Admin</th>
+                        <th>Status</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -35,6 +36,7 @@
                         <td>{{.Email}}</td>
                         <td><span class="badge text-bg-light border">{{.Provider}}</span></td>
                         <td>{{if .IsAdmin}}<span class="badge text-bg-primary">Admin</span>{{else}}<span class="text-muted">—</span>{{end}}</td>
+                        <td>{{if .Archived}}<span class="badge text-bg-secondary">Archived</span>{{else}}<span class="badge text-bg-success">Active</span>{{end}}</td>
                         <td class="text-end">
                             <a href="/admin/users/{{.ID}}" class="btn btn-sm btn-outline-primary">Edit</a>
                         </td>
@@ -42,7 +44,7 @@
                     {{end}}
                     {{else}}
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">No users yet. <a href="/admin/users/new">Invite the first user</a>.</td>
+                        <td colspan="8" class="text-center text-muted py-4">No users yet. <a href="/admin/users/new">Invite the first user</a>.</td>
                     </tr>
                     {{end}}
                 </tbody>

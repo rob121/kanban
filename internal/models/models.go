@@ -15,6 +15,7 @@ type User struct {
 	AvatarURL    string  `gorm:"size:512"`
 	Provider     string  `gorm:"size:64"`
 	IsAdmin      bool   `gorm:"default:false"`
+	Archived     bool   `gorm:"default:false;index"`
 	Theme        string `gorm:"size:8;not null;default:'light'"`
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
@@ -64,9 +65,10 @@ type BoardMember struct {
 	CanCreate bool `gorm:"not null;default:false"`
 	CanUpdate bool `gorm:"not null;default:false"`
 	CanDelete bool `gorm:"not null;default:false"`
-	CanMove   bool `gorm:"not null;default:false"`
-	CanAttach bool `gorm:"not null;default:false"`
-	CreatedAt time.Time
+	CanMove        bool `gorm:"not null;default:false"`
+	CanAttach      bool `gorm:"not null;default:false"`
+	CanManageTags  bool `gorm:"not null;default:false"`
+	CreatedAt      time.Time
 	UpdatedAt time.Time
 
 	Board Board `gorm:"foreignKey:BoardID"`

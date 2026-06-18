@@ -39,7 +39,7 @@
                         </div>
                         <fieldset class="mb-4">
                             <legend class="form-label fs-6 mb-2">Permissions</legend>
-                            {{template "member-permissions" (dict "Prefix" "add" "CanCreate" true "CanUpdate" true "CanDelete" false "CanMove" true "CanAttach" true)}}
+                            {{template "member-permissions" (dict "Prefix" "add" "CanCreate" true "CanUpdate" true "CanDelete" false "CanMove" true "CanAttach" true "CanManageTags" false)}}
                         </fieldset>
                         <button type="submit" class="btn btn-primary w-100" {{if not .Data.AvailableUsers}}disabled{{end}}>Add member</button>
                     </form>
@@ -84,7 +84,7 @@
                                 {{template "csrf" $}}
                                 <div class="member-card-perms">
                                     <span class="member-card-perms-label">Permissions</span>
-                                    {{template "member-permissions" (dict "Prefix" (printf "m-%d" .ID) "CanCreate" .CanCreate "CanUpdate" .CanUpdate "CanDelete" .CanDelete "CanMove" .CanMove "CanAttach" .CanAttach)}}
+                                    {{template "member-permissions" (dict "Prefix" (printf "m-%d" .ID) "CanCreate" .CanCreate "CanUpdate" .CanUpdate "CanDelete" .CanDelete "CanMove" .CanMove "CanAttach" .CanAttach "CanManageTags" .CanManageTags)}}
                                 </div>
                                 <div class="member-card-actions">
                                     <button type="submit" class="btn btn-sm btn-primary">Save</button>

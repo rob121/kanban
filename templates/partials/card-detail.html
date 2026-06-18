@@ -185,7 +185,7 @@
             <textarea class="form-control" id="edit-description" name="description" rows="6" placeholder="Add more detail…">{{.Card.Description}}</textarea>
         </div>
         <div class="card-detail-section">
-            {{template "tag-pills" (dict "Prefix" "edit" "Tags" .BoardTags "Selected" .SelectedTags "BoardID" .Card.BoardID)}}
+            {{template "tag-pills" (dict "Prefix" "edit" "Tags" .BoardTags "Selected" .SelectedTags "BoardID" .Card.BoardID "CanManageTags" .Access.CanManageTags)}}
         </div>
         <div class="card-detail-section">
             <div class="row g-3">

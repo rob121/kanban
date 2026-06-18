@@ -26,8 +26,18 @@ Edit `config.json`:
 
 ### 2. Build
 
+The default SQLite driver is pure Go — **no CGO required**. Builds work with `CGO_ENABLED=0` (static binaries, cross-compilation, and CI):
+
 ```bash
-go build -o kanban .
+CGO_ENABLED=0 go build -o kanban .
+```
+
+A plain `go build` also works on machines where CGO happens to be enabled; SQLite does not depend on it.
+
+Cross-compile example:
+
+```bash
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o kanban .
 ```
 
 ### 3. Create an admin user
@@ -112,6 +122,8 @@ Most screenshots below are in light mode. Use the sun/moon toggle in the navbar 
 
 See `config.example.json` for all options. Database driver can be `sqlite`, `mysql`, or `postgres`.
 
+SQLite uses [glebarez/sqlite](https://github.com/glebarez/sqlite) (`modernc.org/sqlite`), a pure Go implementation. You do not need a C compiler or `libsqlite3` on the host.
+
 **Branding** example:
 
 ```json
@@ -133,8 +145,8 @@ See `config.example.json` for all options. Database driver can be `sqlite`, `mys
 
 ## Stack
 
-- **Go** with `net/http` ServeMux
-- **GORM** (SQLite by default; MySQL/PostgreSQL supported)
+- **Go** with `net/http` ServeMux (**CGO not required**; build with `CGO_ENABLED=0`)
+- **GORM** + pure Go **SQLite** (`glebarez/sqlite`; MySQL/PostgreSQL also supported)
 - **Goth** (Google OAuth)
 - **vhelp** (JSON configuration)
 - **Bootstrap 5** + **Hotwire Turbo** + **SortableJS**

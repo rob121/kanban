@@ -22,5 +22,8 @@ func AuthenticateLocal(username, password string) (*models.User, error) {
 	if user.PasswordHash == "" || !CheckPassword(user.PasswordHash, password) {
 		return nil, ErrInvalidCredentials
 	}
+	if user.Archived {
+		return nil, ErrInvalidCredentials
+	}
 	return &user, nil
 }

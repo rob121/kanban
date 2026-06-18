@@ -9,6 +9,9 @@ import (
 	"github.com/rob121/kanban/internal/auth"
 	"github.com/rob121/kanban/internal/database"
 	"github.com/rob121/kanban/internal/models"
+	"github.com/rob121/kanban/internal/notifications"
+	"github.com/rob121/kanban/internal/users"
+	"github.com/rob121/kanban/mailer"
 	"gorm.io/gorm"
 )
 
@@ -30,7 +33,9 @@ func (h *AdminHandler) UserCreate(w http.ResponseWriter, r *http.Request) {
 	admin, _ := auth.GetUser(r)
 
 	if r.Method == http.MethodGet {
-		_ = h.Render.Render(w, "admin/user_new.html", buildPage(w, r, "Invite User", admin, map[string]any{}))
+		_ = h.Render.Render(w, "admin/user_new.html", buildPage(w, r, "Invite User", admin, map[string]any{
+			"MailEnabled": mailer.Enabled(),
+		}))
 		return
 	}
 
@@ -49,10 +54,12 @@ func (h *AdminHandler) UserCreate(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 
 	formData := map[string]any{
-		"Name":     newUser.Name,
-		"Email":    newUser.Email,
-		"Username": username,
-		"IsAdmin":  newUser.IsAdmin,
+		"Name":        newUser.Name,
+		"Email":       newUser.Email,
+		"Username":    username,
+		"IsAdmin":     newUser.IsAdmin,
+		"MailEnabled": mailer.Enabled(),
+		"InviteNow":   r.FormValue("invite_now") == "on",
 	}
 
 	if newUser.Name == "" || newUser.Email == "" || username == "" {
@@ -87,7 +94,27 @@ func (h *AdminHandler) UserCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+	inviteNow := r.FormValue("invite_now") == "on"
+	emailSent := false
+	emailError := ""
+	if inviteNow {
+		if err := notifications.SendUserInvite(newUser, username, password); err != nil {
+			emailError = err.Error()
+		} else {
+			emailSent = true
+		}
+	}
+
+	_ = h.Render.Render(w, "admin/user_created.html", buildPage(w, r, "User Created", admin, map[string]any{
+		"NewUser":    newUser,
+		"Username":   username,
+		"Password":   password,
+		"LoginURL":   users.LoginURL(),
+		"InviteText": users.InviteText(newUser.Name, username, password),
+		"InvitedNow": inviteNow,
+		"EmailSent":  emailSent,
+		"EmailError": emailError,
+	}))
 }
 
 func (h *AdminHandler) UserEdit(w http.ResponseWriter, r *http.Request) {
@@ -105,8 +132,14 @@ func (h *AdminHandler) UserEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodGet {
+		assigned, _ := users.AssignedCardCount(editUser.ID)
+		canDelete, deleteReason := users.CanHardDelete(editUser.ID)
 		_ = h.Render.Render(w, "admin/user_edit.html", buildPage(w, r, "Edit User", admin, map[string]any{
-			"EditUser": editUser,
+			"EditUser":       editUser,
+			"AssignedCards":  assigned,
+			"CanDeleteUser":  canDelete,
+			"DeleteReason":   deleteReason,
+			"IsSelf":         admin.ID == editUser.ID,
 		}))
 		return
 	}
@@ -172,12 +205,84 @@ func (h *AdminHandler) UserEdit(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
 }
 
-func parseMemberPermissions(r *http.Request) (bool, bool, bool, bool, bool) {
+func (h *AdminHandler) UserArchive(w http.ResponseWriter, r *http.Request) {
+	admin, _ := auth.GetUser(r)
+	userID, err := pathUint(r, "id")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if err := users.Archive(admin.ID, userID); err != nil {
+		var editUser models.User
+		if database.DB.First(&editUser, userID).Error != nil {
+			http.NotFound(w, r)
+			return
+		}
+		assigned, _ := users.AssignedCardCount(editUser.ID)
+		canDelete, deleteReason := users.CanHardDelete(editUser.ID)
+		_ = h.Render.Render(w, "admin/user_edit.html", buildPageError(w, r, "Edit User", admin, map[string]any{
+			"EditUser":      editUser,
+			"AssignedCards": assigned,
+			"CanDeleteUser": canDelete,
+			"DeleteReason":  deleteReason,
+			"IsSelf":        admin.ID == editUser.ID,
+		}, archiveErrorMessage(err)))
+		return
+	}
+
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+func (h *AdminHandler) UserDelete(w http.ResponseWriter, r *http.Request) {
+	admin, _ := auth.GetUser(r)
+	userID, err := pathUint(r, "id")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if err := users.HardDelete(admin.ID, userID); err != nil {
+		var editUser models.User
+		if database.DB.First(&editUser, userID).Error != nil {
+			http.NotFound(w, r)
+			return
+		}
+		assigned, _ := users.AssignedCardCount(editUser.ID)
+		canDelete, deleteReason := users.CanHardDelete(editUser.ID)
+		_ = h.Render.Render(w, "admin/user_edit.html", buildPageError(w, r, "Edit User", admin, map[string]any{
+			"EditUser":      editUser,
+			"AssignedCards": assigned,
+			"CanDeleteUser": canDelete,
+			"DeleteReason":  deleteReason,
+			"IsSelf":        admin.ID == editUser.ID,
+		}, err.Error()))
+		return
+	}
+
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+func archiveErrorMessage(err error) string {
+	switch {
+	case errors.Is(err, users.ErrSelfAction):
+		return "You cannot archive your own account"
+	case errors.Is(err, users.ErrActiveAdmin):
+		return "Cannot archive the only active administrator"
+	case errors.Is(err, users.ErrAlreadyArchived):
+		return "This user is already archived"
+	default:
+		return "Could not archive user"
+	}
+}
+
+func parseMemberPermissions(r *http.Request) (bool, bool, bool, bool, bool, bool) {
 	return r.FormValue("can_create") == "on",
 		r.FormValue("can_update") == "on",
 		r.FormValue("can_delete") == "on",
 		r.FormValue("can_move") == "on",
-		r.FormValue("can_attach") == "on"
+		r.FormValue("can_attach") == "on",
+		r.FormValue("can_manage_tags") == "on"
 }
 
 func parseUserIDForm(r *http.Request) (uint, error) {

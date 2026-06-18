@@ -20,5 +20,9 @@
         <input type="checkbox" class="member-perm-input" name="can_attach" id="{{.Prefix}}-attach"{{if .CanAttach}} checked{{end}}>
         <span class="member-perm-box">Attach</span>
     </label>
+    <label class="member-perm">
+        <input type="checkbox" class="member-perm-input" name="can_manage_tags" id="{{.Prefix}}-tags"{{if .CanManageTags}} checked{{end}}>
+        <span class="member-perm-box">Tags</span>
+    </label>
 </div>
 {{end}}

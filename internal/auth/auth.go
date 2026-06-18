@@ -80,6 +80,9 @@ func GetUser(r *http.Request) (*models.User, bool) {
 	if err := database.DB.First(&user, id).Error; err != nil {
 		return nil, false
 	}
+	if user.Archived {
+		return nil, false
+	}
 	return &user, true
 }
 
@@ -109,6 +112,9 @@ func FindOAuthUser(gothUser goth.User) (*models.User, error) {
 			return nil, ErrOAuthUserNotFound
 		}
 		return nil, err
+	}
+	if user.Archived {
+		return nil, ErrOAuthUserNotFound
 	}
 
 	user.Name = gothUser.Name

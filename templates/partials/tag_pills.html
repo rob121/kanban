@@ -13,7 +13,7 @@
         {{end}}
     </div>
     {{else}}
-    <p class="text-muted small mb-0">No tags on this board.{{if .BoardID}} <a href="/boards/{{.BoardID}}/tags">Manage tags</a>{{end}}</p>
+    <p class="text-muted small mb-0">No tags on this board.{{if and .BoardID .CanManageTags}} <a href="/boards/{{.BoardID}}/tags">Manage tags</a>{{end}}</p>
     {{end}}
 </fieldset>
 {{end}}

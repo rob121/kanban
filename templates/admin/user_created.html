@@ -1,0 +1,78 @@
+{{define "content"}}
+<div class="container py-4" style="max-width: 720px;">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/admin/users">Users</a></li>
+            <li class="breadcrumb-item active">{{.Data.NewUser.Name}}</li>
+        </ol>
+    </nav>
+
+    <h1 class="h3 fw-semibold mb-1">User created</h1>
+    <p class="text-muted mb-4">Share the sign-in details below with {{.Data.NewUser.Name}}. The temporary password is shown only on this page.</p>
+
+    {{if .Data.InvitedNow}}
+        {{if .Data.EmailSent}}
+        <div class="alert alert-success">Invite email sent to {{.Data.NewUser.Email}}.</div>
+        {{else if .Data.EmailError}}
+        <div class="alert alert-warning">Could not send invite email: {{.Data.EmailError}}. Copy the details below and send them manually.</div>
+        {{end}}
+    {{end}}
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Name</dt>
+                <dd class="col-sm-9">{{.Data.NewUser.Name}}</dd>
+                <dt class="col-sm-3">Email</dt>
+                <dd class="col-sm-9">{{.Data.NewUser.Email}}</dd>
+                <dt class="col-sm-3">Sign-in URL</dt>
+                <dd class="col-sm-9"><a href="{{.Data.LoginURL}}">{{.Data.LoginURL}}</a></dd>
+                <dt class="col-sm-3">Username</dt>
+                <dd class="col-sm-9"><code id="invite-username">{{.Data.Username}}</code></dd>
+                <dt class="col-sm-3">Password</dt>
+                <dd class="col-sm-9"><code id="invite-password">{{.Data.Password}}</code></dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <h2 class="h6 fw-semibold mb-0">Invite message</h2>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="copy-invite-btn">Copy invite text</button>
+            </div>
+            <textarea class="form-control font-monospace small" id="invite-text" rows="10" readonly>{{.Data.InviteText}}</textarea>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a href="/admin/users/{{.Data.NewUser.ID}}" class="btn btn-primary">Edit user</a>
+        <a href="/admin/users" class="btn btn-outline-secondary">Back to users</a>
+        <a href="/admin/users/new" class="btn btn-outline-secondary">Invite another</a>
+    </div>
+</div>
+<script>
+(function () {
+    var btn = document.getElementById('copy-invite-btn');
+    var text = document.getElementById('invite-text');
+    if (!btn || !text) return;
+    btn.addEventListener('click', function () {
+        var value = text.value;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(value).then(function () {
+                btn.textContent = 'Copied!';
+                setTimeout(function () { btn.textContent = 'Copy invite text'; }, 2000);
+            });
+            return;
+        }
+        text.focus();
+        text.select();
+        try {
+            document.execCommand('copy');
+            btn.textContent = 'Copied!';
+            setTimeout(function () { btn.textContent = 'Copy invite text'; }, 2000);
+        } catch (e) {}
+    });
+})();
+</script>
+{{end}}
