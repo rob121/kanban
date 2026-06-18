@@ -33,6 +33,7 @@ type Board struct {
 	Name        string `gorm:"size:255;not null"`
 	Description string `gorm:"type:text"`
 	Color       string `gorm:"size:32;not null;default:'#0d6efd'"`
+	Archived    bool   `gorm:"default:false;index"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
@@ -109,6 +110,17 @@ type Card struct {
 	Tags        []BoardTag       `gorm:"many2many:card_tags;"`
 }
 
+func (c *Card) OwnerID() uint {
+	if c.CreatorID == nil {
+		return 0
+	}
+	return *c.CreatorID
+}
+
+func (c *Card) IsOwnedBy(userID uint) bool {
+	return c.OwnerID() == userID
+}
+
 type CardAttachment struct {
 	ID          uint   `gorm:"primaryKey"`
 	CardID      uint   `gorm:"index;not null"`
@@ -130,6 +142,16 @@ type Comment struct {
 	Body      string `gorm:"type:text;not null"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
+
+	Card Card `gorm:"foreignKey:CardID"`
+	User User `gorm:"foreignKey:UserID"`
+}
+
+type CardSubscriber struct {
+	ID        uint `gorm:"primaryKey"`
+	CardID    uint `gorm:"uniqueIndex:idx_card_subscriber;not null"`
+	UserID    uint `gorm:"uniqueIndex:idx_card_subscriber;not null"`
+	CreatedAt time.Time
 
 	Card Card `gorm:"foreignKey:CardID"`
 	User User `gorm:"foreignKey:UserID"`

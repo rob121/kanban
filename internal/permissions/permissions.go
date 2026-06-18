@@ -83,6 +83,9 @@ func GetAccess(user *models.User, boardID uint) (Access, error) {
 	}
 
 	access := Access{Board: board}
+	if board.Archived && (user == nil || !user.IsAdmin) {
+		return Access{}, ErrNoAccess
+	}
 	if user.IsAdmin {
 		access.IsAdmin = true
 		access.IsOwner = board.UserID == user.ID
@@ -108,7 +111,7 @@ func GetAccess(user *models.User, boardID uint) (Access, error) {
 func AccessibleBoards(user *models.User) ([]models.Board, error) {
 	if user.IsAdmin {
 		var boards []models.Board
-		err := database.DB.Order("updated_at desc").Find(&boards).Error
+		err := database.DB.Where("archived = ?", false).Order("updated_at desc").Find(&boards).Error
 		return boards, err
 	}
 
@@ -116,7 +119,7 @@ func AccessibleBoards(user *models.User) ([]models.Board, error) {
 	err := database.DB.
 		Distinct("boards.*").
 		Joins("LEFT JOIN board_members ON board_members.board_id = boards.id AND board_members.user_id = ?", user.ID).
-		Where("boards.user_id = ? OR board_members.user_id = ?", user.ID, user.ID).
+		Where("(boards.user_id = ? OR board_members.user_id = ?) AND boards.archived = ?", user.ID, user.ID, false).
 		Order("boards.updated_at desc").
 		Find(&boards).Error
 	return boards, err
@@ -142,6 +145,18 @@ func BoardParticipants(boardID uint) ([]models.User, error) {
 		}
 	}
 	return users, nil
+}
+
+func BoardParticipantIDs(boardID uint) ([]uint, error) {
+	users, err := BoardParticipants(boardID)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]uint, len(users))
+	for i, u := range users {
+		ids[i] = u.ID
+	}
+	return ids, nil
 }
 
 func MemberFromForm(canCreate, canUpdate, canDelete, canMove, canAttach bool) models.BoardMember {

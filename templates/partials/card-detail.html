@@ -3,9 +3,18 @@
     <div id="card-detail-view">
         <div class="card-detail-toolbar">
             <span class="badge rounded-pill text-bg-light border card-detail-mode">Viewing</span>
-            {{if .Access.CanUpdate}}
-            <button type="button" class="btn btn-sm btn-primary card-detail-edit-btn">Edit</button>
-            {{end}}
+            <div class="d-flex align-items-center gap-2 ms-auto">
+                {{if .CanSubscribe}}
+                <button type="button" class="btn btn-sm d-inline-flex align-items-center gap-1 card-subscribe-btn {{if .IsSubscribed}}btn-success{{else}}btn-outline-secondary{{end}}" data-subscribed="{{if .IsSubscribed}}1{{else}}0{{end}}" aria-pressed="{{if .IsSubscribed}}true{{else}}false{{end}}" title="{{if .IsSubscribed}}Unsubscribe from card updates{{else}}Subscribe to card updates{{end}}">
+                    <span class="btn-icon card-subscribe-icon-unsub{{if .IsSubscribed}} d-none{{end}}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+                    <span class="btn-icon card-subscribe-icon-sub{{if not .IsSubscribed}} d-none{{end}}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M22 8c0-2.3-.8-4.3-2-6"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/><path d="M4 2C2.8 3.7 2 5.7 2 8"/></svg></span>
+                    <span class="card-subscribe-label">{{if .IsSubscribed}}Subscribed{{else}}Subscribe{{end}}</span>
+                </button>
+                {{end}}
+                {{if .Access.CanUpdate}}
+                <button type="button" class="btn btn-sm btn-primary card-detail-edit-btn">Edit</button>
+                {{end}}
+            </div>
         </div>
 
         <div class="card-detail-meta-panel">
@@ -25,7 +34,7 @@
                 <span class="card-detail-meta-value">{{.Card.CreatedAt.Format "Jan 2, 2006"}}</span>
             </div>
             <div class="card-detail-meta-cell">
-                <span class="card-detail-meta-label">Creator</span>
+                <span class="card-detail-meta-label">Owner</span>
                 <span class="card-detail-meta-value">
                     {{if .Card.Creator}}
                     <span class="card-detail-meta-person">
@@ -201,6 +210,17 @@
                         {{end}}
                     </select>
                 </div>
+                {{if .CanTransferOwnership}}
+                <div class="col-12">
+                    <label class="form-label" for="edit-owner">Owner</label>
+                    <select class="form-select" id="edit-owner" name="owner_id">
+                        {{range .Participants}}
+                        <option value="{{.ID}}" {{if and $.Card.CreatorID (eq .ID $.Card.CreatorID)}}selected{{end}}>{{.Name}}</option>
+                        {{end}}
+                    </select>
+                    <div class="form-text">Transfer card ownership to another board member.</div>
+                </div>
+                {{end}}
             </div>
         </div>
         </div>

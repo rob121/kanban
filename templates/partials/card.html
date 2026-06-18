@@ -14,8 +14,8 @@
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     {{if .Creator}}
                     {{if or (not .Assignee) (ne .Creator.ID .Assignee.ID)}}
-                    <span class="card-meta-creator" title="Created by {{.Creator.Name}}">
-                        {{template "user-avatar" (dict "User" .Creator "Size" "sm" "Title" (printf "Created by %s" .Creator.Name))}}
+                    <span class="card-meta-creator" title="Owned by {{.Creator.Name}}">
+                        {{template "user-avatar" (dict "User" .Creator "Size" "sm" "Title" (printf "Owned by %s" .Creator.Name))}}
                     </span>
                     {{end}}
                     {{end}}
@@ -33,7 +33,7 @@
                     <span class="priority-dot priority-{{.Priority}}" title="Priority: {{.Priority}}"></span>
                     {{if .Assignee}}
                     {{if and .Creator (eq .Creator.ID .Assignee.ID)}}
-                    {{template "user-avatar" (dict "User" .Assignee "Size" "sm" "Title" (printf "Created by %s" .Assignee.Name))}}
+                    {{template "user-avatar" (dict "User" .Assignee "Size" "sm" "Title" (printf "Owned by %s" .Assignee.Name))}}
                     {{else}}
                     {{template "user-avatar" (dict "User" .Assignee "Size" "sm" "Title" .Assignee.Name)}}
                     {{end}}

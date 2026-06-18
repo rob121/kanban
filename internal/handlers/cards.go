@@ -9,7 +9,9 @@ import (
 	"github.com/rob121/kanban/internal/auth"
 	"github.com/rob121/kanban/internal/database"
 	"github.com/rob121/kanban/internal/models"
+	"github.com/rob121/kanban/internal/notifications"
 	"github.com/rob121/kanban/internal/permissions"
+	"github.com/rob121/kanban/internal/subscriptions"
 )
 
 type CardHandler struct {
@@ -148,15 +150,18 @@ func (h *CardHandler) Show(w http.ResponseWriter, r *http.Request) {
 		participants, _ := permissions.BoardParticipants(card.BoardID)
 		boardTags := boardTagsOrSeed(card.BoardID)
 		_ = h.Render.RenderPartial(w, "card-detail", map[string]any{
-			"Card":           card,
-			"User":           user,
-			"Participants":   participants,
-			"Access":         access,
-			"BoardTags":      boardTags,
-			"SelectedTags":   selectedTagSet(card.Tags),
-			"CommentsTotal":  commentsTotal,
-			"CommentsPage":   commentsPage,
-			"CommentsPages":  commentsPages,
+			"Card":                 card,
+			"User":                 user,
+			"Participants":         participants,
+			"Access":               access,
+			"BoardTags":            boardTags,
+			"SelectedTags":         selectedTagSet(card.Tags),
+			"CommentsTotal":        commentsTotal,
+			"CommentsPage":         commentsPage,
+			"CommentsPages":        commentsPages,
+			"CanTransferOwnership": card.IsOwnedBy(user.ID),
+			"CanSubscribe":         subscriptions.CanSubscribe(card, user.ID),
+			"IsSubscribed":         subscriptions.IsSubscribed(card.ID, user.ID),
 		})
 		return
 	}
@@ -208,8 +213,33 @@ func (h *CardHandler) Update(w http.ResponseWriter, r *http.Request) {
 		card.AssigneeID = nil
 	}
 
+	if card.IsOwnedBy(user.ID) {
+		if oid := r.FormValue("owner_id"); oid != "" {
+			if id, err := strconv.ParseUint(oid, 10, 64); err == nil && id > 0 {
+				if participantIDs, err := permissions.BoardParticipantIDs(card.BoardID); err == nil {
+					uid := uint(id)
+					for _, pid := range participantIDs {
+						if pid == uid {
+							card.CreatorID = &uid
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+
 	database.DB.Save(&card)
 	syncCardTags(&card, card.BoardID, r.Form["tag_ids"])
+
+	if card.AssigneeID != nil {
+		subscriptions.ClearForUser(card.ID, *card.AssigneeID)
+	}
+	if card.CreatorID != nil {
+		subscriptions.ClearForUser(card.ID, *card.CreatorID)
+	}
+
+	notifications.CardUpdated(card.ID, user.ID)
 
 	if wantsPartial(r) {
 		preloadKanbanCard(&card)
@@ -261,8 +291,15 @@ func (h *CardHandler) Move(w http.ResponseWriter, r *http.Request) {
 	}
 
 	database.DB.Save(&card)
+	if card.AssigneeID != nil {
+		subscriptions.ClearForUser(card.ID, *card.AssigneeID)
+	}
 	reorderCards(oldCategoryID)
 	reorderCards(card.CategoryID)
+
+	if oldCategoryID != card.CategoryID {
+		notifications.CardMoved(card.ID, user.ID, oldCategoryID)
+	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -327,12 +364,68 @@ func (h *CardHandler) AddComment(w http.ResponseWriter, r *http.Request) {
 	database.DB.Create(&comment)
 	database.DB.Preload("User").First(&comment, comment.ID)
 
+	notifications.CommentAdded(card.ID, comment.ID, user.ID)
+
 	if wantsPartial(r) {
 		_ = h.Render.RenderPartial(w, "comment", comment)
 		return
 	}
 
 	http.Redirect(w, r, r.Header.Get("Referer"), http.StatusSeeOther)
+}
+
+func (h *CardHandler) Subscribe(w http.ResponseWriter, r *http.Request) {
+	user, _ := auth.GetUser(r)
+	cardID, err := pathUint(r, "id")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	var card models.Card
+	if err := database.DB.First(&card, cardID).Error; err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if _, ok := requireBoardPerm(w, r, user, card.BoardID, permissions.Access.CanView); !ok {
+		return
+	}
+	if !subscriptions.CanSubscribe(card, user.ID) {
+		http.Error(w, "cannot subscribe to this card", http.StatusBadRequest)
+		return
+	}
+	if err := subscriptions.Subscribe(card.ID, user.ID); err != nil {
+		http.Error(w, "could not subscribe", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *CardHandler) Unsubscribe(w http.ResponseWriter, r *http.Request) {
+	user, _ := auth.GetUser(r)
+	cardID, err := pathUint(r, "id")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	var card models.Card
+	if err := database.DB.First(&card, cardID).Error; err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if _, ok := requireBoardPerm(w, r, user, card.BoardID, permissions.Access.CanView); !ok {
+		return
+	}
+	if err := subscriptions.Unsubscribe(card.ID, user.ID); err != nil {
+		http.Error(w, "could not unsubscribe", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func reorderCards(categoryID uint) {

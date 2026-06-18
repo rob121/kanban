@@ -14,6 +14,16 @@
         initColumnSortable();
         bindDeleteColumn();
         syncColumnDeleteButtons();
+        openCardFromQuery();
+    }
+
+    function openCardFromQuery() {
+        var params = new URLSearchParams(window.location.search);
+        var cardId = params.get('card');
+        if (!cardId || !document.querySelector('.kanban-board')) {
+            return;
+        }
+        openCardDetail(cardId);
     }
 
     function getTheme() {
@@ -660,6 +670,30 @@
             });
     }
 
+    function syncSubscribeButton(btn, subscribed) {
+        if (!btn) {
+            return;
+        }
+        btn.setAttribute('data-subscribed', subscribed ? '1' : '0');
+        btn.setAttribute('aria-pressed', subscribed ? 'true' : 'false');
+        btn.title = subscribed ? 'Unsubscribe from card updates' : 'Subscribe to card updates';
+        btn.classList.toggle('btn-success', subscribed);
+        btn.classList.toggle('btn-outline-secondary', !subscribed);
+        btn.classList.remove('btn-outline-primary');
+        var label = btn.querySelector('.card-subscribe-label');
+        if (label) {
+            label.textContent = subscribed ? 'Subscribed' : 'Subscribe';
+        }
+        var iconUnsub = btn.querySelector('.card-subscribe-icon-unsub');
+        var iconSub = btn.querySelector('.card-subscribe-icon-sub');
+        if (iconUnsub) {
+            iconUnsub.classList.toggle('d-none', subscribed);
+        }
+        if (iconSub) {
+            iconSub.classList.toggle('d-none', !subscribed);
+        }
+    }
+
     function bindCardInteractions() {
         if (window.__kanbanCardInteractionBound) {
             return;
@@ -675,6 +709,33 @@
                 }
                 e.preventDefault();
                 openCardDetail(panel.getAttribute('data-card-id'), pageBtn.getAttribute('data-comments-page'));
+                return;
+            }
+            if (e.target.closest('.card-subscribe-btn')) {
+                var subBtn = e.target.closest('.card-subscribe-btn');
+                var panel = subBtn.closest('#card-detail-panel');
+                if (!panel) {
+                    return;
+                }
+                e.preventDefault();
+                var cardId = panel.getAttribute('data-card-id');
+                var subscribed = subBtn.getAttribute('data-subscribed') === '1';
+                var url = '/cards/' + cardId + (subscribed ? '/unsubscribe' : '/subscribe');
+                subBtn.disabled = true;
+                fetch(url, {
+                    method: 'POST',
+                    headers: csrfHeaders()
+                }).then(function (res) {
+                    if (!res.ok) {
+                        throw new Error('subscription failed');
+                    }
+                    var nowSubscribed = !subscribed;
+                    syncSubscribeButton(subBtn, nowSubscribed);
+                }).catch(function () {
+                    alert('Could not update subscription.');
+                }).finally(function () {
+                    subBtn.disabled = false;
+                });
                 return;
             }
             if (e.target.closest('.card-detail-edit-btn')) {

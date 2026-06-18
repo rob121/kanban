@@ -44,6 +44,7 @@ func Connect() error {
 		&models.Card{},
 		&models.Comment{},
 		&models.CardAttachment{},
+		&models.CardSubscriber{},
 	); err != nil {
 		return fmt.Errorf("migrate: %w", err)
 	}

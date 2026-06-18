@@ -13,6 +13,7 @@ import (
 	"github.com/rob121/kanban/internal/config"
 	"github.com/rob121/kanban/internal/database"
 	"github.com/rob121/kanban/internal/mail"
+	"github.com/rob121/kanban/internal/notifications"
 	"github.com/rob121/kanban/internal/server"
 )
 
@@ -44,6 +45,7 @@ func main() {
 
 	config.Load()
 	mail.Init()
+	notifications.Init()
 	auth.Init()
 
 	if err := database.Connect(); err != nil {

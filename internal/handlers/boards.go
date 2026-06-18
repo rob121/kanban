@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/rob121/kanban/internal/auth"
+	boardcleanup "github.com/rob121/kanban/internal/boards"
 	"github.com/rob121/kanban/internal/database"
 	"github.com/rob121/kanban/internal/models"
 	"github.com/rob121/kanban/internal/permissions"
@@ -98,7 +99,7 @@ func (h *BoardHandler) Show(w http.ResponseWriter, r *http.Request) {
 	}))
 }
 
-func (h *BoardHandler) Delete(w http.ResponseWriter, r *http.Request) {
+func (h *BoardHandler) Archive(w http.ResponseWriter, r *http.Request) {
 	user, _ := auth.GetUser(r)
 	boardID, err := pathUint(r, "id")
 	if err != nil {
@@ -107,18 +108,43 @@ func (h *BoardHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	access, err := permissions.GetAccess(user, boardID)
-	if err != nil || !access.CanManageBoard() {
+	if err != nil || !access.CanManageBoard() || access.Board.Archived {
 		http.NotFound(w, r)
 		return
 	}
 
-	board := access.Board
-	database.DB.Where("board_id = ?", board.ID).Delete(&models.BoardMember{})
-	database.DB.Where("board_id = ?", board.ID).Delete(&models.Comment{})
-	database.DB.Where("board_id = ?", board.ID).Delete(&models.Card{})
-	database.DB.Where("board_id = ?", board.ID).Delete(&models.Category{})
-	database.DB.Where("board_id = ?", board.ID).Delete(&models.BoardTag{})
-	database.DB.Delete(&board)
+	access.Board.Archived = true
+	if err := database.DB.Save(&access.Board).Error; err != nil {
+		http.Error(w, "could not archive board", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/boards", http.StatusSeeOther)
+}
+
+func (h *BoardHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	user, _ := auth.GetUser(r)
+	if user == nil || !user.IsAdmin {
+		http.NotFound(w, r)
+		return
+	}
+
+	boardID, err := pathUint(r, "id")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	var board models.Board
+	if err := database.DB.Unscoped().First(&board, boardID).Error; err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if err := boardcleanup.HardDelete(board.ID); err != nil {
+		http.Error(w, "could not delete board", http.StatusInternalServerError)
+		return
+	}
 
 	http.Redirect(w, r, "/boards", http.StatusSeeOther)
 }
@@ -141,7 +167,8 @@ func (h *BoardHandler) Settings(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodGet {
 		_ = h.Render.Render(w, "boards/settings.html", buildPage(w, r, board.Name+" · Settings", user, map[string]any{
-			"Board": board,
+			"Board":  board,
+			"Access": access,
 		}))
 		return
 	}
@@ -154,7 +181,8 @@ func (h *BoardHandler) Settings(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimSpace(r.FormValue("name"))
 	if name == "" {
 		_ = h.Render.Render(w, "boards/settings.html", buildPageError(w, r, board.Name+" · Settings", user, map[string]any{
-			"Board": board,
+			"Board":  board,
+			"Access": access,
 		}, "Board name is required"))
 		return
 	}

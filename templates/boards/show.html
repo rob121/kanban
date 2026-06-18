@@ -9,6 +9,7 @@
                 </ol>
             </nav>
             <h1 class="h4 fw-semibold mb-0">{{.Data.Board.Name}}</h1>
+            {{if .Data.Board.Archived}}<p class="text-warning small mb-0 mt-1">This board is archived.</p>{{end}}
             {{if .Data.Board.Description}}<p class="text-muted small mb-0 mt-1">{{.Data.Board.Description}}</p>{{end}}
         </div>
         <div class="d-flex flex-wrap gap-2">
@@ -27,11 +28,20 @@
                 <span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41 0l6.59-6.59a1 1 0 0 0 0-1.41L12 2Z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg></span>
                 Tags
             </a>
+            {{if not .Data.Board.Archived}}
             <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">+ Column</button>
-            <form action="/boards/{{.Data.Board.ID}}/delete" method="post" class="m-0" onsubmit="return confirm('Delete this board and all its cards?');">
+            {{end}}
+            {{if and .Data.Access.IsAdmin .Data.Board.Archived}}
+            <form action="/boards/{{.Data.Board.ID}}/delete" method="post" class="m-0" onsubmit="return confirm('Permanently delete this board and all related data?');">
                 {{template "csrf" .}}
-                <button type="submit" class="btn btn-sm btn-outline-danger">Delete board</button>
+                <button type="submit" class="btn btn-sm btn-danger">Permanently delete</button>
             </form>
+            {{else if .Data.Access.CanManageBoard}}
+            <form action="/boards/{{.Data.Board.ID}}/archive" method="post" class="m-0" onsubmit="return confirm('Archive this board? It will be hidden from your boards list.');">
+                {{template "csrf" .}}
+                <button type="submit" class="btn btn-sm btn-outline-danger">Archive board</button>
+            </form>
+            {{end}}
             {{end}}
         </div>
     </div>
