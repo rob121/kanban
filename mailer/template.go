@@ -6,13 +6,16 @@ import (
 	"html/template"
 	"os"
 	"strings"
+	"time"
 )
 
 //go:embed templates/wrapper.html
 var defaultWrapperFS embed.FS
 
 func templateFuncs() template.FuncMap {
-	return template.FuncMap{}
+	return template.FuncMap{
+		"year": func() int { return time.Now().Year() },
+	}
 }
 
 func renderTemplate(path string, args map[string]interface{}) (string, error) {
@@ -36,6 +39,11 @@ func renderTemplate(path string, args map[string]interface{}) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	if args == nil {
+		args = make(map[string]interface{})
+	}
+	mergeDefaultEmailArgs(args)
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, args); err != nil {

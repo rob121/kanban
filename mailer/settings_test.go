@@ -13,6 +13,8 @@ func TestConfigure(t *testing.T) {
 		TestTo:   "dev@example.com",
 		BaseURL:  "https://kanban.example.com/",
 		SiteName: "My Boards",
+		BrandMark: "TB",
+		BrandColor: "#4f46e5",
 	})
 
 	if Host != "smtp.example.com" {
@@ -29,6 +31,12 @@ func TestConfigure(t *testing.T) {
 	}
 	if defaultMailerSiteName() != "My Boards" {
 		t.Fatalf("SiteName = %q", defaultMailerSiteName())
+	}
+	if defaultMailerBrandMark() != "TB" {
+		t.Fatalf("BrandMark = %q", defaultMailerBrandMark())
+	}
+	if defaultMailerBrandColor() != "#4f46e5" {
+		t.Fatalf("BrandColor = %q", defaultMailerBrandColor())
 	}
 	if !Enabled() {
 		t.Fatal("expected Enabled() true when host is set")

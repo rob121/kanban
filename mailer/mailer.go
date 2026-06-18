@@ -73,9 +73,15 @@ func mergeDefaultEmailArgs(into map[string]interface{}) {
 	if _, ok := into["SiteName"]; !ok {
 		into["SiteName"] = defaultMailerSiteName()
 	}
+	if _, ok := into["BrandMark"]; !ok {
+		into["BrandMark"] = defaultMailerBrandMark()
+	}
+	if _, ok := into["BrandColor"]; !ok {
+		into["BrandColor"] = defaultMailerBrandColor()
+	}
 }
 
-// MergeDefaultEmailArgs adds BaseURL and SiteName when keys are absent.
+// MergeDefaultEmailArgs adds BaseURL, SiteName, and branding when keys are absent.
 // Call before ResolveEmailContent when bypassing (*Msg).Content.
 func MergeDefaultEmailArgs(into map[string]interface{}) {
 	mergeDefaultEmailArgs(into)
@@ -90,6 +96,12 @@ func mergeDefaultEmailArgsAny(into map[string]any) {
 	}
 	if _, ok := into["SiteName"]; !ok {
 		into["SiteName"] = defaultMailerSiteName()
+	}
+	if _, ok := into["BrandMark"]; !ok {
+		into["BrandMark"] = defaultMailerBrandMark()
+	}
+	if _, ok := into["BrandColor"]; !ok {
+		into["BrandColor"] = defaultMailerBrandColor()
 	}
 }
 

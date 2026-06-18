@@ -4,6 +4,8 @@ import (
 	"strings"
 )
 
+const defaultBrandColor = "#4f46e5"
+
 // Settings holds SMTP and template options loaded from application config.
 type Settings struct {
 	Host         string
@@ -18,10 +20,14 @@ type Settings struct {
 	Logo         string
 	BaseURL      string
 	SiteName     string
+	BrandMark    string
+	BrandColor   string
 }
 
 var configuredBaseURL string
 var configuredSiteName string
+var configuredBrandMark string
+var configuredBrandColor string
 
 // Configure applies mail settings from application config. Call once after config.Load().
 func Configure(s Settings) {
@@ -41,6 +47,14 @@ func Configure(s Settings) {
 	Logo = strings.TrimSpace(s.Logo)
 	configuredBaseURL = strings.TrimRight(strings.TrimSpace(s.BaseURL), "/")
 	configuredSiteName = strings.TrimSpace(s.SiteName)
+	configuredBrandMark = strings.TrimSpace(s.BrandMark)
+	if configuredBrandMark == "" {
+		configuredBrandMark = "K"
+	}
+	configuredBrandColor = strings.TrimSpace(s.BrandColor)
+	if configuredBrandColor == "" {
+		configuredBrandColor = defaultBrandColor
+	}
 }
 
 // Enabled reports whether outbound SMTP is configured (host is set).
@@ -57,4 +71,12 @@ func defaultMailerSiteName() string {
 		return configuredSiteName
 	}
 	return "Kanban"
+}
+
+func defaultMailerBrandMark() string {
+	return configuredBrandMark
+}
+
+func defaultMailerBrandColor() string {
+	return configuredBrandColor
 }

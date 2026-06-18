@@ -21,5 +21,7 @@ func Init() {
 		Logo:         m.Logo,
 		BaseURL:      config.C.BaseURL,
 		SiteName:     config.C.Branding.AppName,
+		BrandMark:    config.C.Branding.BrandMark,
+		BrandColor:   config.C.Branding.BrandColor,
 	})
 }
