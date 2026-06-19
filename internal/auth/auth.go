@@ -46,7 +46,7 @@ func Init() {
 
 	callback := config.C.BaseURL + "/auth/google/callback"
 	goth.UseProviders(
-		google.New(config.C.Auth.Google.ClientID, config.C.Auth.Google.ClientSecret, callback),
+		google.New(config.C.Auth.Google.ClientID, config.C.Auth.Google.ClientSecret, callback, "email", "profile"),
 	)
 }
 
@@ -128,8 +128,13 @@ func FindOAuthUser(gothUser goth.User) (*models.User, error) {
 		return nil, ErrOAuthUserNotFound
 	}
 
-	user.Name = gothUser.Name
-	user.AvatarURL = gothUser.AvatarURL
+	user.Name = strings.TrimSpace(user.Name)
+	if name := oauthDisplayName(gothUser); name != "" && user.Name == "" {
+		user.Name = name
+	}
+	if gothUser.AvatarURL != "" {
+		user.AvatarURL = gothUser.AvatarURL
+	}
 	user.Provider = gothUser.Provider
 	if err := database.DB.Save(&user).Error; err != nil {
 		return nil, err
